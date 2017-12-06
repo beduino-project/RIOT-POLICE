@@ -57,6 +57,7 @@ export OBJDUMPFLAGS          # The parameter for OBJDUMP.
 export SIZE                  # The command to read to size of the ELF sections.
 export UNDEF                 # Object files that the linker must include in the ELFFILE even if no call to the functions or symbols (ex: interrupt vectors).
 export WERROR                # Treat all compiler warnings as errors if set to 1 (see -Werror flag in GCC manual)
+export CHECKEDC              # Wether the Checked C language extension should be used.
 
 export GITCACHE              # path to git-cache executable
 export FLASHER               # The command to call on "make flash".
