@@ -119,6 +119,21 @@ ifeq ($(DEVELHELP),1)
   CFLAGS += -DDEVELHELP
 endif
 
+# Set this to 1 to indicate that you want to compile your code with the
+# Checked C language extension. This currently requires a modified
+# version of the clang compiler toolchain.
+CHECKEDC ?= 0
+ifeq ($(CHECKEDC),1)
+  CFLAGS += -DNDEBUG
+  CFLAGS += -DUSE_CHECKEDC
+  ifneq ($(CHECKEDC_CHECK_BOUNDS),1)
+      CFLAGS += -Wno-check-bounds-decls
+  endif
+
+  USEPKG += checkedc
+  TOOLCHAIN = llvm
+endif
+
 # Fail on warnings. Can be overridden by `make WERROR=0`.
 WERROR ?= 1
 export WERROR
