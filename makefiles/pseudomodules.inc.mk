@@ -6,6 +6,7 @@ PSEUDOMODULES += ccn-lite-utils
 PSEUDOMODULES += cbor_ctime
 PSEUDOMODULES += cbor_float
 PSEUDOMODULES += cbor_semantic_tagging
+PSEUDOMODULES += checkedc
 PSEUDOMODULES += conn_can_isotp_multi
 PSEUDOMODULES += core_%
 PSEUDOMODULES += emb6_router
