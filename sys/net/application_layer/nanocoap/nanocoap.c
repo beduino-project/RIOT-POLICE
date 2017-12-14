@@ -208,8 +208,8 @@ ssize_t coap_build_reply(coap_pkt_t *pkt, unsigned code,
     /* if code is COAP_CODE_EMPTY (zero), use RST as type, else RESP */
     unsigned type = code ? COAP_RESP : COAP_RST;
 
-    coap_build_hdr((coap_hdr_t *)rbuf, type, pkt->token, tkl, code,
-                   ntohs(pkt->hdr->id));
+    coap_build_hdr((coap_hdr_t *)rbuf, type, pkt->token, tkl,
+                   rbuf, rlen, code, ntohs(pkt->hdr->id));
     coap_hdr_set_type((coap_hdr_t *)rbuf, type);
     coap_hdr_set_code((coap_hdr_t *)rbuf, code);
 
@@ -218,7 +218,10 @@ ssize_t coap_build_reply(coap_pkt_t *pkt, unsigned code,
     return len;
 }
 
-ssize_t coap_build_hdr(coap_hdr_t *hdr, unsigned type, uint8_t *token, size_t token_len, unsigned code, uint16_t id)
+ssize_t coap_build_hdr(coap_hdr_t *hdr, unsigned type, \
+                       uint8_t *token, size_t token_len, \
+                       uint8_t *buf, size_t buf_len, \
+                       unsigned code, uint16_t id)
 {
     assert(!(type & ~0x3));
     assert(!(token_len & ~0x1f));
@@ -228,8 +231,8 @@ ssize_t coap_build_hdr(coap_hdr_t *hdr, unsigned type, uint8_t *token, size_t to
     hdr->code = code;
     hdr->id = htons(id);
 
-    if (token_len) {
-        memcpy(hdr->data, token, token_len);
+    if (token_len && buf_len >= token_len + sizeof(coap_hdr_t)) {
+        memcpy(buf + sizeof(coap_hdr_t), token, token_len);
     }
 
     return sizeof(coap_hdr_t) + token_len;

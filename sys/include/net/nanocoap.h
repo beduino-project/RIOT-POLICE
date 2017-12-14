@@ -340,13 +340,17 @@ ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_le
  * @param[in]    type       CoAP packet type (e.g., COAP_TYPE_CON, ...)
  * @param[in]    token      token
  * @param[in]    token_len  length of @p token
+ * @param[in]    buf        buffer to write token to
+ * @param[in]    buf_len    legnth of @p buf
  * @param[in]    code       CoAP code (e.g., COAP_CODE_204, ...)
  * @param[in]    id         CoAP request id
  *
  * @returns      length of resulting header
  */
-ssize_t coap_build_hdr(coap_hdr_t *hdr, unsigned type, uint8_t *token,
-                       size_t token_len, unsigned code, uint16_t id);
+ssize_t coap_build_hdr(coap_hdr_t *hdr, unsigned type,
+                       uint8_t *token, size_t token_len,
+                       uint8_t *buf, size_t buf_len,
+                       unsigned code, uint16_t id);
 
 /**
  * @brief   Insert a CoAP option into buffer
