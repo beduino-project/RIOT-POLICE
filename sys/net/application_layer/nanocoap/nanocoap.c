@@ -185,7 +185,7 @@ ssize_t coap_reply_simple(coap_pkt_t *pkt,
     uint8_t *bufpos = payload_start;
 
     if (payload_len) {
-        bufpos += coap_put_option_ct(bufpos, 0, ct);
+        bufpos += coap_put_option_ct(bufpos, len, 0, ct);
         *bufpos++ = 0xff;
 
         memcpy(bufpos, payload, payload_len);
@@ -290,8 +290,11 @@ static uint32_t _decode_uint(uint8_t *pkt_pos, unsigned nbytes)
     return ntohl(res);
 }
 
-static unsigned _put_delta_optlen(uint8_t *buf, unsigned offset, unsigned shift, unsigned val)
-{
+static unsigned _put_delta_optlen(uint8_t *buf, size_t len, unsigned offset, unsigned shift, unsigned val) {
+    if (offset + sizeof(uint16_t) > len) {
+        return 0;
+    }
+
     if (val < 13) {
         *buf |= (val << shift);
     }
@@ -309,7 +312,7 @@ static unsigned _put_delta_optlen(uint8_t *buf, unsigned offset, unsigned shift,
     return offset;
 }
 
-size_t coap_put_option(uint8_t *buf, uint16_t lastonum, uint16_t onum, uint8_t *odata, size_t olen)
+size_t coap_put_option(uint8_t *buf, size_t blen, uint16_t lastonum, uint16_t onum, uint8_t *odata, size_t olen)
 {
     assert(lastonum <= onum);
 
@@ -318,32 +321,36 @@ size_t coap_put_option(uint8_t *buf, uint16_t lastonum, uint16_t onum, uint8_t *
 
     /* write delta value to option header: 4 upper bits of header (shift 4) +
      * 1 or 2 optional bytes depending on delta value) */
-    unsigned n = _put_delta_optlen(buf, 1, 4, delta);
+    unsigned n = _put_delta_optlen(buf, blen, 1, 4, delta);
+    if (!n) {
+        return 0;
+    }
+
     /* write option length to option header: 4 lower bits of header (shift 0) +
      * 1 or 2 optional bytes depending of the length of the option */
-    n = _put_delta_optlen(buf, n, 0, olen);
-    if (olen) {
+    n = _put_delta_optlen(buf, blen, n, 0, olen);
+    if (olen && n + olen <= blen) {
         memcpy(buf + n, odata, olen);
         n += olen;
     }
     return (size_t)n;
 }
 
-size_t coap_put_option_ct(uint8_t *buf, uint16_t lastonum, uint16_t content_type)
+size_t coap_put_option_ct(uint8_t *buf, size_t len, uint16_t lastonum, uint16_t content_type)
 {
     if (content_type == 0) {
-        return coap_put_option(buf, lastonum, COAP_OPT_CONTENT_FORMAT, NULL, 0);
+        return coap_put_option(buf, len, lastonum, COAP_OPT_CONTENT_FORMAT, NULL, 0);
     }
     else if (content_type <= 255) {
         uint8_t tmp = content_type;
-        return coap_put_option(buf, lastonum, COAP_OPT_CONTENT_FORMAT, &tmp, sizeof(tmp));
+        return coap_put_option(buf, len, lastonum, COAP_OPT_CONTENT_FORMAT, &tmp, sizeof(tmp));
     }
     else {
-        return coap_put_option(buf, lastonum, COAP_OPT_CONTENT_FORMAT, (uint8_t *)&content_type, sizeof(content_type));
+        return coap_put_option(buf, len, lastonum, COAP_OPT_CONTENT_FORMAT, (uint8_t *)&content_type, sizeof(content_type));
     }
 }
 
-size_t coap_put_option_uri(uint8_t *buf, uint16_t lastonum, const char *uri, uint16_t optnum)
+size_t coap_put_option_uri(uint8_t *buf, size_t len, uint16_t lastonum, const char *uri, uint16_t optnum)
 {
     char separator = (optnum == COAP_OPT_URI_PATH) ? '/' : '&';
     size_t uri_len = strlen(uri);
@@ -370,7 +377,7 @@ size_t coap_put_option_uri(uint8_t *buf, uint16_t lastonum, const char *uri, uin
         part_len = (uint8_t *)uripos - part_start;
 
         if (part_len) {
-            bufpos += coap_put_option(bufpos, lastonum, optnum, part_start, part_len);
+            bufpos += coap_put_option(bufpos, len, lastonum, optnum, part_start, part_len);
             lastonum = optnum;
         }
     }
@@ -381,11 +388,16 @@ size_t coap_put_option_uri(uint8_t *buf, uint16_t lastonum, const char *uri, uin
 ssize_t coap_well_known_core_default_handler(coap_pkt_t *pkt, uint8_t *buf, \
                                              size_t len)
 {
+    size_t n;
     uint8_t *payload = buf + coap_get_total_hdr_len(pkt);
 
     uint8_t *bufpos = payload;
 
-    bufpos += coap_put_option_ct(bufpos, 0, COAP_CT_LINK_FORMAT);
+    n = coap_put_option_ct(bufpos, len, 0, COAP_CT_LINK_FORMAT);
+    if (!n)
+        return -1;
+
+    bufpos += n;
     *bufpos++ = 0xff;
 
     for (unsigned i = 0; i < coap_resources_numof; i++) {
