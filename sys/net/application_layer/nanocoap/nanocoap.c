@@ -23,13 +23,23 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "checkedc.h"
 #include "net/nanocoap.h"
 
-#define ENABLE_DEBUG (0)
+#define ENABLE_DEBUG (1)
 #include "debug.h"
 
-static uint8_t *_decode_value(int *res, unsigned val, uint8_t *pkt_pos, uint8_t *pkt_end);
-static uint32_t _decode_uint(uint8_t *pkt_pos, uint8_t *pkt_end, unsigned nbytes);
+#ifdef USE_CHECKEDC
+#include "string_checked.h"
+#pragma BOUNDS_CHECKED ON
+#endif
+
+static ptr(uint8_t) _decode_value(ptr(int) res, unsigned val,
+                              array_ptr(uint8_t) pkt_start abounds(pkt_start, pkt_end),
+                              array_ptr(uint8_t) pkt_end);
+static uint32_t _decode_uint(array_ptr(uint8_t) pkt_pos abounds(pkt_pos, pkt_end),
+                             array_ptr(uint8_t) pkt_end, unsigned nbytes);
+
 
 /* http://tools.ietf.org/html/rfc7252#section-3
  *  0                   1                   2                   3
@@ -44,16 +54,18 @@ static uint32_t _decode_uint(uint8_t *pkt_pos, uint8_t *pkt_end, unsigned nbytes
  * |1 1 1 1 1 1 1 1|    Payload (if any) ...
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  */
-int coap_parse(coap_pkt_t *pkt, uint8_t *buf, size_t len)
+int coap_parse(coap_pkt_t *pkt atype(ptr(coap_pkt_t)),
+               uint8_t *buf acount(len), size_t len)
 {
     int option_delta, option_len;
-    uint8_t *urlpos = pkt->url;
-    coap_hdr_t *hdr = (coap_hdr_t *)buf;
+    array_ptr(uint8_t) urlpos abounds(pkt->url, pkt->url + NANOCOAP_URL_MAX) = pkt->url;
+    ptr(coap_hdr_t) hdr = dynamic_cast(ptr(coap_hdr_t), buf);
 
     pkt->hdr = hdr;
 
-    uint8_t *pkt_pos = buf + sizeof(coap_hdr_t);
-    uint8_t *pkt_end = buf + len;
+    array_ptr(uint8_t) pkt_end = buf + len;
+    array_ptr(uint8_t) pkt_pos abounds(buf + sizeof(coap_hdr_t), pkt_end)
+        = buf + sizeof(coap_hdr_t);
 
     memset(pkt->url, '\0', NANOCOAP_URL_MAX);
     pkt->payload_len = 0;
@@ -74,7 +86,7 @@ int coap_parse(coap_pkt_t *pkt, uint8_t *buf, size_t len)
         uint8_t option_byte = *pkt_pos++;
         if (option_byte == 0xff) {
             pkt->payload = pkt_pos;
-            pkt->payload_len = buf + len - pkt_pos;
+            pkt->payload_len = pkt_end - pkt_pos;
             DEBUG("payload len = %u\n", pkt->payload_len);
             break;
         }
@@ -142,7 +154,9 @@ int coap_parse(coap_pkt_t *pkt, uint8_t *buf, size_t len)
     return 0;
 }
 
-ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_len)
+ssize_t coap_handle_req(coap_pkt_t *pkt atype(ptr(coap_pkt_t)),
+                        uint8_t *resp_buf acount(resp_buf_len),
+                        unsigned resp_buf_len)
 {
     if (coap_get_code_class(pkt) != COAP_REQ) {
         DEBUG("coap_handle_req(): not a request.\n");
@@ -160,7 +174,7 @@ ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_le
             continue;
         }
 
-        int res = strcmp((char *)pkt->url, coap_resources[i].path);
+        int res = strcmp((nt_array_ptr(char))pkt->url, coap_resources[i].path);
         if (res > 0) {
             continue;
         }
@@ -175,17 +189,22 @@ ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_le
     return coap_build_reply(pkt, COAP_CODE_404, resp_buf, resp_buf_len, 0);
 }
 
-ssize_t coap_reply_simple(coap_pkt_t *pkt,
+ssize_t coap_reply_simple(coap_pkt_t *pkt atype(ptr(coap_pkt_t)),
                           unsigned code,
-                          uint8_t *buf, size_t len,
+                          uint8_t *buf acount(len),
+                          size_t len,
                           unsigned ct,
-                          const uint8_t *payload, uint8_t payload_len)
+                          const uint8_t *payload acount(payload_len),
+                          uint8_t payload_len)
 {
-    uint8_t *payload_start = buf + coap_get_total_hdr_len(pkt);
-    uint8_t *bufpos = payload_start;
+    array_ptr(uint8_t) payload_end = buf + len;
+    array_ptr(uint8_t) payload_start abounds(buf, buf + len)
+        = buf + coap_get_total_hdr_len(pkt);
+    array_ptr(uint8_t) bufpos abounds(payload_start, payload_end)
+        = payload_start;
 
     if (payload_len) {
-        bufpos += coap_put_option_ct(bufpos, buf + len, 0, ct);
+        bufpos += coap_put_option_ct(bufpos, payload_end, 0, ct);
         *bufpos++ = 0xff;
 
         memcpy(bufpos, payload, payload_len);
@@ -195,8 +214,9 @@ ssize_t coap_reply_simple(coap_pkt_t *pkt,
     return coap_build_reply(pkt, code, buf, len, bufpos - payload_start);
 }
 
-ssize_t coap_build_reply(coap_pkt_t *pkt, unsigned code,
-                         uint8_t *rbuf, unsigned rlen, unsigned payload_len)
+ssize_t coap_build_reply(coap_pkt_t *pkt atype(ptr(coap_pkt_t)), unsigned code,
+                         uint8_t *rbuf acount(rlen), unsigned rlen,
+                         unsigned payload_len)
 {
     unsigned tkl = coap_get_token_len(pkt);
     unsigned len = sizeof(coap_hdr_t) + tkl;
@@ -208,19 +228,19 @@ ssize_t coap_build_reply(coap_pkt_t *pkt, unsigned code,
     /* if code is COAP_CODE_EMPTY (zero), use RST as type, else RESP */
     unsigned type = code ? COAP_RESP : COAP_RST;
 
-    coap_build_hdr((coap_hdr_t *)rbuf, type, pkt->token, tkl,
+    coap_build_hdr((ptr(coap_hdr_t))rbuf, type, pkt->token, tkl,
                    rbuf, rlen, code, ntohs(pkt->hdr->id));
-    coap_hdr_set_type((coap_hdr_t *)rbuf, type);
-    coap_hdr_set_code((coap_hdr_t *)rbuf, code);
+    coap_hdr_set_type((ptr(coap_hdr_t))rbuf, type);
+    coap_hdr_set_code((ptr(coap_hdr_t))rbuf, code);
 
     len += payload_len;
 
     return len;
 }
 
-ssize_t coap_build_hdr(coap_hdr_t *hdr, unsigned type, \
-                       uint8_t *token, size_t token_len, \
-                       uint8_t *buf, size_t buf_len, \
+ssize_t coap_build_hdr(coap_hdr_t *hdr atype(ptr(coap_hdr_t)), unsigned type,
+                       uint8_t *token acount(token_len), size_t token_len,
+                       uint8_t *buf acount(buf_len), size_t buf_len,
                        unsigned code, uint16_t id)
 {
     assert(!(type & ~0x3));
@@ -238,8 +258,11 @@ ssize_t coap_build_hdr(coap_hdr_t *hdr, unsigned type, \
     return sizeof(coap_hdr_t) + token_len;
 }
 
-static uint8_t *_decode_value(int *res, unsigned val, uint8_t *pkt_pos, uint8_t *pkt_end)
+static ptr(uint8_t) _decode_value(ptr(int) res, unsigned val,
+                              array_ptr(uint8_t) pkt_start abounds(pkt_start, pkt_end),
+                              array_ptr(uint8_t) pkt_end)
 {
+    array_ptr(uint8_t) pkt_pos abounds(pkt_start, pkt_end) = pkt_start;
     size_t left = pkt_end - pkt_pos;
 
     switch (val) {
@@ -263,7 +286,7 @@ static uint8_t *_decode_value(int *res, unsigned val, uint8_t *pkt_pos, uint8_t 
                 return NULL;
             }
             uint16_t delta;
-            uint8_t *_tmp = (uint8_t *)&delta;
+            array_ptr(uint8_t) _tmp abounds(&delta, &delta + 1) = (array_ptr(uint8_t))&delta;
             *_tmp++ = *pkt_pos++;
             *_tmp++ = *pkt_pos++;
             *res = ntohs(delta) + 269;
@@ -279,10 +302,11 @@ static uint8_t *_decode_value(int *res, unsigned val, uint8_t *pkt_pos, uint8_t 
             *res = val;
     }
 
-    return pkt_pos;
+    return dynamic_cast(ptr(uint8_t), pkt_pos);
 }
 
-static uint32_t _decode_uint(uint8_t *pkt_pos, uint8_t *pkt_end, unsigned nbytes)
+static uint32_t _decode_uint(array_ptr(uint8_t) pkt_pos abounds(pkt_pos, pkt_end),
+                             array_ptr(uint8_t) pkt_end, unsigned nbytes)
 {
 #ifdef NDEBUG
     (void)pkt_end;
@@ -301,7 +325,10 @@ static uint32_t _decode_uint(uint8_t *pkt_pos, uint8_t *pkt_end, unsigned nbytes
     return ntohl(res);
 }
 
-static unsigned _put_delta_optlen(uint8_t *buf, uint8_t *end, unsigned offset, unsigned shift, unsigned val) {
+static unsigned _put_delta_optlen(array_ptr(uint8_t) buf abounds(buf, end),
+                                  array_ptr(uint8_t) end, unsigned offset,
+                                  unsigned shift, unsigned val)
+{
     size_t left = end - buf;
     if (offset + sizeof(uint16_t) > left) {
         return 0;
@@ -324,8 +351,12 @@ static unsigned _put_delta_optlen(uint8_t *buf, uint8_t *end, unsigned offset, u
     return offset;
 }
 
-size_t coap_put_option(uint8_t *buf, uint8_t *bend, uint16_t lastonum, uint16_t onum, uint8_t *odata, size_t olen)
-{
+unchecked /* https://github.com/Microsoft/checkedc-clang/issues/443 */
+size_t coap_put_option(uint8_t *buf abounds(buf, bend),
+                       uint8_t *bend atype(array_ptr(uint8_t)),
+                       uint16_t lastonum, uint16_t onum,
+                       uint8_t *odata acount(olen), size_t olen)
+checked {
     size_t left = bend - buf;
     assert(lastonum <= onum);
 
@@ -349,8 +380,11 @@ size_t coap_put_option(uint8_t *buf, uint8_t *bend, uint16_t lastonum, uint16_t 
     return (size_t)n;
 }
 
-size_t coap_put_option_ct(uint8_t *buf, uint8_t *end, uint16_t lastonum, uint16_t content_type)
-{
+unchecked /* https://github.com/Microsoft/checkedc-clang/issues/443 */
+size_t coap_put_option_ct(uint8_t *buf abounds(buf, end),
+                          uint8_t *end atype(array_ptr(uint8_t)),
+                          uint16_t lastonum, uint16_t content_type)
+checked {
     if (content_type == 0) {
         return coap_put_option(buf, end, lastonum, COAP_OPT_CONTENT_FORMAT, NULL, 0);
     }
@@ -359,12 +393,18 @@ size_t coap_put_option_ct(uint8_t *buf, uint8_t *end, uint16_t lastonum, uint16_
         return coap_put_option(buf, end, lastonum, COAP_OPT_CONTENT_FORMAT, &tmp, sizeof(tmp));
     }
     else {
-        return coap_put_option(buf, end, lastonum, COAP_OPT_CONTENT_FORMAT, (uint8_t *)&content_type, sizeof(content_type));
+        return coap_put_option(buf, end, lastonum, COAP_OPT_CONTENT_FORMAT,
+                               (array_ptr(uint8_t))&content_type, sizeof(content_type));
     }
 }
 
-size_t coap_put_option_uri(uint8_t *buf, uint8_t *end, uint16_t lastonum, const char *uri, uint16_t optnum)
-{
+unchecked /* https://github.com/Microsoft/checkedc-clang/issues/443 */
+size_t coap_put_option_uri(uint8_t *buf abounds(buf, end),
+                           uint8_t *end atype(array_ptr(uint8_t)),
+                           uint16_t lastonum,
+                           const char *uri atype(nt_array_ptr(const char)),
+                           uint16_t optnum)
+checked {
     char separator = (optnum == COAP_OPT_URI_PATH) ? '/' : '&';
     size_t uri_len = strlen(uri);
 
@@ -372,13 +412,13 @@ size_t coap_put_option_uri(uint8_t *buf, uint8_t *end, uint16_t lastonum, const 
         return 0;
     }
 
-    uint8_t *bufpos = buf;
-    char *uripos = (char *)uri;
+    array_ptr(uint8_t) bufpos abounds(buf, end) = buf;
+    nt_array_ptr(char) uripos = (nt_array_ptr(char))uri;
 
     while (uri_len) {
         size_t part_len;
         uripos++;
-        uint8_t *part_start = (uint8_t *)uripos;
+        nt_array_ptr(uint8_t) part_start = (nt_array_ptr(uint8_t))uripos;
 
         while (uri_len--) {
             if ((*uripos == separator) || (*uripos == '\0')) {
@@ -387,7 +427,7 @@ size_t coap_put_option_uri(uint8_t *buf, uint8_t *end, uint16_t lastonum, const 
             uripos++;
         }
 
-        part_len = (uint8_t *)uripos - part_start;
+        part_len = (array_ptr(uint8_t))uripos - part_start;
 
         if (part_len) {
             bufpos += coap_put_option(bufpos, end, lastonum, optnum, part_start, part_len);
@@ -398,15 +438,18 @@ size_t coap_put_option_uri(uint8_t *buf, uint8_t *end, uint16_t lastonum, const 
     return bufpos - buf;
 }
 
-ssize_t coap_well_known_core_default_handler(coap_pkt_t *pkt, uint8_t *buf, \
+ssize_t coap_well_known_core_default_handler(coap_pkt_t *pkt atype(ptr(coap_pkt_t)),
+                                             uint8_t *buf acount(len),
                                              size_t len)
 {
     size_t n;
-    uint8_t *payload = buf + coap_get_total_hdr_len(pkt);
+    array_ptr(uint8_t) payload_end = buf + len;
+    array_ptr(uint8_t) payload_start abounds(buf, payload_end)
+        = buf + coap_get_total_hdr_len(pkt);
+    array_ptr(uint8_t) bufpos abounds(payload_start, payload_end)
+        = buf + coap_get_total_hdr_len(pkt);
 
-    uint8_t *bufpos = payload;
-
-    n = coap_put_option_ct(bufpos, buf + len, 0, COAP_CT_LINK_FORMAT);
+    n = coap_put_option_ct(bufpos, payload_end, 0, COAP_CT_LINK_FORMAT);
     if (!n)
         return -1;
 
@@ -424,7 +467,7 @@ ssize_t coap_well_known_core_default_handler(coap_pkt_t *pkt, uint8_t *buf, \
         *bufpos++ = '>';
     }
 
-    unsigned payload_len = bufpos - payload;
+    unsigned payload_len = bufpos - payload_start;
 
     return coap_build_reply(pkt, COAP_CODE_205, buf, len, payload_len);
 }

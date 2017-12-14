@@ -34,6 +34,8 @@
 #include <arpa/inet.h>
 #endif
 
+#include "checkedc.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -219,39 +221,44 @@ typedef struct {
  * @brief   CoAP option array entry
  */
 typedef struct {
-    coap_hdr_t *hdr;                /**< pointer to raw packet              */
-    uint8_t url[NANOCOAP_URL_MAX];  /**< parsed request URL                 */
-    uint8_t qs[NANOCOAP_QS_MAX];    /**< parsed query string                */
-    uint8_t *token;                 /**< pointer to token                   */
-    uint8_t *payload;               /**< pointer to payload                 */
-    unsigned payload_len;           /**< length of payload                  */
-    uint16_t content_type;          /**< content type                       */
-    uint32_t observe_value;         /**< observe value                      */
+    coap_hdr_t *hdr atype(ptr(coap_hdr_t));             /**< pointer to raw packet              */
+    uint8_t url [NANOCOAP_URL_MAX]
+        atype(uint8_t nt_checked[NANOCOAP_URL_MAX]);    /**< parsed request URL                 */
+    uint8_t qs [NANOCOAP_QS_MAX]
+        atype(uint8_t nt_checked[NANOCOAP_QS_MAX]);     /**< parsed query string                */
+    uint8_t *token atype(ptr(uint8_t));                 /**< pointer to token                   */
+    uint8_t *payload acount(payload_len);               /**< pointer to payload                 */
+    unsigned payload_len;                               /**< length of payload                  */
+    uint16_t content_type;                              /**< content type                       */
+    uint32_t observe_value;                             /**< observe value                      */
 } coap_pkt_t;
 
 /**
  * @brief   Resource handler type
  */
-typedef ssize_t (*coap_handler_t)(coap_pkt_t *pkt, uint8_t *buf, size_t len);
+typedef ssize_t (coap_handler_t)(coap_pkt_t *pkt atype(ptr(coap_pkt_t)),
+        uint8_t *buf acount(len), size_t len);
 
 /**
  * @brief   Type for CoAP resource entry
  */
 typedef struct {
-    const char *path;               /**< URI path of resource               */
+    const char *path                /**< URI path of resource               */
+        atype(nt_array_ptr(const char));
     unsigned methods;               /**< OR'ed methods this resource allows */
-    coap_handler_t handler;         /**< ptr to resource handler            */
+    coap_handler_t *handler
+        atype(ptr(coap_handler_t)); /**< ptr to resource handler            */
 } coap_resource_t;
-
-/**
- * @brief   Global CoAP resource list
- */
-extern const coap_resource_t coap_resources[];
 
 /**
  * @brief   Number of entries in global CoAP resource list
  */
 extern const unsigned coap_resources_numof;
+
+/**
+ * @brief   Global CoAP resource list
+ */
+extern const coap_resource_t coap_resources[] acount(coap_resources_numof);
 
 /**
  * @brief   Parse a CoAP PDU
@@ -267,7 +274,8 @@ extern const unsigned coap_resources_numof;
  * @returns     0 on success
  * @returns     <0 on error
  */
-int coap_parse(coap_pkt_t *pkt, uint8_t *buf, size_t len);
+int coap_parse(coap_pkt_t *pkt atype(ptr(coap_pkt_t)),
+               uint8_t *buf acount(len), size_t len);
 
 /**
  * @brief   Build reply to CoAP request
@@ -286,8 +294,9 @@ int coap_parse(coap_pkt_t *pkt, uint8_t *buf, size_t len);
  * @returns     size of reply packet on success
  * @returns     <0 on error
  */
-ssize_t coap_build_reply(coap_pkt_t *pkt, unsigned code,
-                         uint8_t *rbuf, unsigned rlen, unsigned payload_len);
+ssize_t coap_build_reply(coap_pkt_t *pkt atype(ptr(coap_pkt_t)), unsigned code,
+                         uint8_t *rbuf acount(rlen), unsigned rlen,
+                         unsigned payload_len);
 
 /**
  * @brief   Create CoAP reply (convenience function)
@@ -309,11 +318,13 @@ ssize_t coap_build_reply(coap_pkt_t *pkt, unsigned code,
  * @returns     size of reply packet on success
  * @returns     <0 on error
  */
-ssize_t coap_reply_simple(coap_pkt_t *pkt,
+ssize_t coap_reply_simple(coap_pkt_t *pkt atype(ptr(coap_pkt_t)),
                           unsigned code,
-                          uint8_t *buf, size_t len,
+                          uint8_t *buf acount(len),
+                          size_t len,
                           unsigned ct,
-                          const uint8_t *payload, uint8_t payload_len);
+                          const uint8_t *payload acount(payload_len),
+                          uint8_t payload_len);
 
 /**
  * @brief   Handle incoming CoAP request
@@ -328,7 +339,9 @@ ssize_t coap_reply_simple(coap_pkt_t *pkt,
  * @returns     size of reply packet on success
  * @returns     <0 on error
  */
-ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_len);
+ssize_t coap_handle_req(coap_pkt_t *pkt atype(ptr(coap_pkt_t)),
+                        uint8_t *resp_buf acount(resp_buf_len),
+                        unsigned resp_buf_len);
 
 /**
  * @brief   Builds a CoAP header
@@ -346,9 +359,9 @@ ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_le
  *
  * @returns      length of resulting header
  */
-ssize_t coap_build_hdr(coap_hdr_t *hdr, unsigned type,
-                       uint8_t *token, size_t token_len,
-                       uint8_t *buf, size_t buf_len,
+ssize_t coap_build_hdr(coap_hdr_t *hdr atype(ptr(coap_hdr_t)), unsigned type,
+                       uint8_t *token acount(token_len), size_t token_len,
+                       uint8_t *buf acount(buf_len), size_t buf_len,
                        unsigned code, uint16_t id);
 
 /**
@@ -368,7 +381,10 @@ ssize_t coap_build_hdr(coap_hdr_t *hdr, unsigned type,
  *
  * @returns     amount of bytes written to @p buf
  */
-size_t coap_put_option(uint8_t *buf, uint8_t *bend, uint16_t lastonum, uint16_t onum, uint8_t *odata, size_t olen);
+size_t coap_put_option(uint8_t *buf abounds(buf, bend),
+                       uint8_t *bend atype(array_ptr(uint8_t)),
+                       uint16_t lastonum, uint16_t onum,
+                       uint8_t *odata acount(olen), size_t olen);
 
 /**
  * @brief   Insert content type option into buffer
@@ -381,7 +397,9 @@ size_t coap_put_option(uint8_t *buf, uint8_t *bend, uint16_t lastonum, uint16_t 
  *
  * @returns     amount of bytes written to @p buf
  */
-size_t coap_put_option_ct(uint8_t *buf, uint8_t *end, uint16_t lastonum, uint16_t content_type);
+size_t coap_put_option_ct(uint8_t *buf abounds(buf, end),
+                          uint8_t *end atype(array_ptr(uint8_t)),
+                          uint16_t lastonum, uint16_t content_type);
 
 /**
  * @brief   Insert URI encoded option into buffer
@@ -395,7 +413,11 @@ size_t coap_put_option_ct(uint8_t *buf, uint8_t *end, uint16_t lastonum, uint16_
  *
  * @returns     amount of bytes written to @p buf
  */
-size_t coap_put_option_uri(uint8_t *buf, uint8_t *end, uint16_t lastonum, const char *uri, uint16_t optnum);
+size_t coap_put_option_uri(uint8_t *buf abounds(buf, end),
+                           uint8_t *end atype(array_ptr(uint8_t)),
+                           uint16_t lastonum,
+                           const char *uri atype(nt_array_ptr(const char)),
+                           uint16_t optnum);
 
 /**
  * @brief   Get the CoAP version number
@@ -404,7 +426,7 @@ size_t coap_put_option_uri(uint8_t *buf, uint8_t *end, uint16_t lastonum, const 
  *
  * @returns     CoAP version number
  */
-static inline unsigned coap_get_ver(coap_pkt_t *pkt)
+static inline unsigned coap_get_ver(coap_pkt_t *pkt atype(ptr(coap_pkt_t)))
 {
     return (pkt->hdr->ver_t_tkl & 0x60) >> 6;
 }
@@ -419,7 +441,7 @@ static inline unsigned coap_get_ver(coap_pkt_t *pkt)
  * @returns     COAP_TYPE_ACK
  * @returns     COAP_TYPE_RST
  */
-static inline unsigned coap_get_type(coap_pkt_t *pkt)
+static inline unsigned coap_get_type(coap_pkt_t *pkt atype(ptr(coap_pkt_t)))
 {
     return (pkt->hdr->ver_t_tkl & 0x30) >> 4;
 }
@@ -431,7 +453,7 @@ static inline unsigned coap_get_type(coap_pkt_t *pkt)
  *
  * @returns     length of token in the given message (0-8 byte)
  */
-static inline unsigned coap_get_token_len(coap_pkt_t *pkt)
+static inline unsigned coap_get_token_len(coap_pkt_t *pkt atype(ptr(coap_pkt_t)))
 {
     return (pkt->hdr->ver_t_tkl & 0xf);
 }
@@ -443,7 +465,7 @@ static inline unsigned coap_get_token_len(coap_pkt_t *pkt)
  *
  * @returns     message code class
  */
-static inline unsigned coap_get_code_class(coap_pkt_t *pkt)
+static inline unsigned coap_get_code_class(coap_pkt_t *pkt atype(ptr(coap_pkt_t)))
 {
     return pkt->hdr->code >> 5;
 }
@@ -455,7 +477,7 @@ static inline unsigned coap_get_code_class(coap_pkt_t *pkt)
  *
  * @returns     message code detail
  */
-static inline unsigned coap_get_code_detail(coap_pkt_t *pkt)
+static inline unsigned coap_get_code_detail(coap_pkt_t *pkt atype(ptr(coap_pkt_t)))
 {
     return pkt->hdr->code & 0x1f;
 }
@@ -467,7 +489,7 @@ static inline unsigned coap_get_code_detail(coap_pkt_t *pkt)
  *
  * @returns     raw message code
  */
-static inline unsigned coap_get_code_raw(coap_pkt_t *pkt)
+static inline unsigned coap_get_code_raw(coap_pkt_t *pkt atype(ptr(coap_pkt_t)))
 {
     return (unsigned)pkt->hdr->code;
 }
@@ -479,7 +501,7 @@ static inline unsigned coap_get_code_raw(coap_pkt_t *pkt)
  *
  * @returns     message code in decimal format
  */
-static inline unsigned coap_get_code(coap_pkt_t *pkt)
+static inline unsigned coap_get_code(coap_pkt_t *pkt atype(ptr(coap_pkt_t)))
 {
     return (coap_get_code_class(pkt) * 100) + coap_get_code_detail(pkt);
 }
@@ -491,7 +513,7 @@ static inline unsigned coap_get_code(coap_pkt_t *pkt)
  *
  * @returns     message ID
  */
-static inline unsigned coap_get_id(coap_pkt_t *pkt)
+static inline unsigned coap_get_id(coap_pkt_t *pkt atype(ptr(coap_pkt_t)))
 {
     return ntohs(pkt->hdr->id);
 }
@@ -503,7 +525,7 @@ static inline unsigned coap_get_id(coap_pkt_t *pkt)
  *
  * @returns     total header length
  */
-static inline unsigned coap_get_total_hdr_len(coap_pkt_t *pkt)
+static inline unsigned coap_get_total_hdr_len(coap_pkt_t *pkt atype(ptr(coap_pkt_t)))
 {
     return sizeof(coap_hdr_t) + coap_get_token_len(pkt);
 }
@@ -527,7 +549,7 @@ static inline uint8_t coap_code(unsigned class, unsigned detail)
  * @param[out]  hdr     CoAP header to write to
  * @param[in]   code    raw message code
  */
-static inline void coap_hdr_set_code(coap_hdr_t *hdr, uint8_t code)
+static inline void coap_hdr_set_code(coap_hdr_t *hdr atype(ptr(coap_hdr_t)), uint8_t code)
 {
     hdr->code = code;
 }
@@ -540,7 +562,7 @@ static inline void coap_hdr_set_code(coap_hdr_t *hdr, uint8_t code)
  * @param[out]  hdr     CoAP header to write
  * @param[in]   type    message type as integer value [0-3]
  */
-static inline void coap_hdr_set_type(coap_hdr_t *hdr, unsigned type)
+static inline void coap_hdr_set_type(coap_hdr_t *hdr atype(ptr(coap_hdr_t)), unsigned type)
 {
     /* assert correct range of type */
     assert(!(type & ~0x3));
@@ -569,7 +591,7 @@ static inline unsigned coap_method2flag(unsigned code)
  * @returns     true if observe value is set
  * @returns     false if not
  */
-static inline bool coap_has_observe(coap_pkt_t *pkt)
+static inline bool coap_has_observe(coap_pkt_t *pkt atype(ptr(coap_pkt_t)))
 {
     return pkt->observe_value != UINT32_MAX;
 }
@@ -579,7 +601,7 @@ static inline bool coap_has_observe(coap_pkt_t *pkt)
  *
  * @param[in]   pkt   CoAP packet
  */
-static inline void coap_clear_observe(coap_pkt_t *pkt)
+static inline void coap_clear_observe(coap_pkt_t *pkt atype(ptr(coap_pkt_t)))
 {
     pkt->observe_value = UINT32_MAX;
 }
@@ -591,7 +613,7 @@ static inline void coap_clear_observe(coap_pkt_t *pkt)
  *
  * @returns     value of the observe option
  */
-static inline uint32_t coap_get_observe(coap_pkt_t *pkt)
+static inline uint32_t coap_get_observe(coap_pkt_t *pkt atype(ptr(coap_pkt_t)))
 {
     return pkt->observe_value;
 }
@@ -600,8 +622,9 @@ static inline uint32_t coap_get_observe(coap_pkt_t *pkt)
  * @brief   Reference to the default .well-known/core handler defined by the
  *          application
  */
-extern ssize_t coap_well_known_core_default_handler(coap_pkt_t *pkt, \
-                                                    uint8_t *buf, size_t len);
+extern ssize_t coap_well_known_core_default_handler(coap_pkt_t *pkt atype(ptr(coap_pkt_t)),
+                                             uint8_t *buf acount(len),
+                                             size_t len);
 
 /**
  * @brief   Resource definition for the default .well-known/core handler
