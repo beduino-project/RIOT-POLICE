@@ -29,7 +29,7 @@
 #include "debug.h"
 
 static uint8_t *_decode_value(int *res, unsigned val, uint8_t *pkt_pos, uint8_t *pkt_end);
-static uint32_t _decode_uint(uint8_t *pkt_pos, unsigned nbytes);
+static uint32_t _decode_uint(uint8_t *pkt_pos, uint8_t *pkt_end, unsigned nbytes);
 
 /* http://tools.ietf.org/html/rfc7252#section-3
  *  0                   1                   2                   3
@@ -115,7 +115,7 @@ int coap_parse(coap_pkt_t *pkt, uint8_t *buf, size_t len)
                     break;
                 case COAP_OPT_OBSERVE:
                     if (option_len < 4) {
-                        pkt->observe_value = _decode_uint(pkt_pos, option_len);
+                        pkt->observe_value = _decode_uint(pkt_pos, pkt_end, option_len);
                     }
                     else {
                         DEBUG("nanocoap: discarding packet with invalid option length.\n");
@@ -282,14 +282,22 @@ static uint8_t *_decode_value(int *res, unsigned val, uint8_t *pkt_pos, uint8_t 
     return pkt_pos;
 }
 
-static uint32_t _decode_uint(uint8_t *pkt_pos, unsigned nbytes)
+static uint32_t _decode_uint(uint8_t *pkt_pos, uint8_t *pkt_end, unsigned nbytes)
 {
-    assert(nbytes <= 4);
+#ifdef NDEBUG
+    (void)pkt_end;
+#endif
+    assert(nbytes <= 3);
+    assert(pkt_pos + nbytes < pkt_end);
 
     uint32_t res = 0;
-    if (nbytes) {
-        memcpy(((uint8_t *)&res) + (4 - nbytes), pkt_pos, nbytes);
-    }
+    if (nbytes >= 1)
+        res = pkt_pos[0];
+    if (nbytes >= 2)
+        res = pkt_pos[1] + res;
+    if (nbytes >= 3)
+        res = pkt_pos[2] + res;
+
     return ntohl(res);
 }
 
