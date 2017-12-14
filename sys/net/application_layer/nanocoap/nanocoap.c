@@ -52,7 +52,7 @@ int coap_parse(coap_pkt_t *pkt, uint8_t *buf, size_t len)
 
     pkt->hdr = hdr;
 
-    uint8_t *pkt_pos = hdr->data;
+    uint8_t *pkt_pos = buf + sizeof(coap_hdr_t);
     uint8_t *pkt_end = buf + len;
 
     memset(pkt->url, '\0', NANOCOAP_URL_MAX);
