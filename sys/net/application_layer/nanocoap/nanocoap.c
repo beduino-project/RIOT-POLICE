@@ -28,7 +28,7 @@
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
-static int _decode_value(unsigned val, uint8_t **pkt_pos_ptr, uint8_t *pkt_end);
+static uint8_t *_decode_value(int *res, unsigned val, uint8_t *pkt_pos, uint8_t *pkt_end);
 static uint32_t _decode_uint(uint8_t *pkt_pos, unsigned nbytes);
 
 /* http://tools.ietf.org/html/rfc7252#section-3
@@ -46,6 +46,7 @@ static uint32_t _decode_uint(uint8_t *pkt_pos, unsigned nbytes);
  */
 int coap_parse(coap_pkt_t *pkt, uint8_t *buf, size_t len)
 {
+    int option_delta, option_len;
     uint8_t *urlpos = pkt->url;
     coap_hdr_t *hdr = (coap_hdr_t *)buf;
 
@@ -78,13 +79,13 @@ int coap_parse(coap_pkt_t *pkt, uint8_t *buf, size_t len)
             break;
         }
         else {
-            int option_delta = _decode_value(option_byte >> 4, &pkt_pos, pkt_end);
-            if (option_delta < 0) {
+            pkt_pos = _decode_value(&option_delta, option_byte >> 4, pkt_pos, pkt_end);
+            if (!pkt_pos) {
                 DEBUG("bad op delta\n");
                 return -EBADMSG;
             }
-            int option_len = _decode_value(option_byte & 0xf, &pkt_pos, pkt_end);
-            if (option_len < 0) {
+            pkt_pos = _decode_value(&option_len, option_byte & 0xf, pkt_pos, pkt_end);
+            if (!pkt_pos) {
                 DEBUG("bad op len\n");
                 return -EBADMSG;
             }
@@ -234,11 +235,9 @@ ssize_t coap_build_hdr(coap_hdr_t *hdr, unsigned type, uint8_t *token, size_t to
     return sizeof(coap_hdr_t) + token_len;
 }
 
-static int _decode_value(unsigned val, uint8_t **pkt_pos_ptr, uint8_t *pkt_end)
+static uint8_t *_decode_value(int *res, unsigned val, uint8_t *pkt_pos, uint8_t *pkt_end)
 {
-    uint8_t *pkt_pos = *pkt_pos_ptr;
     size_t left = pkt_end - pkt_pos;
-    int res;
 
     switch (val) {
         case 13:
@@ -246,10 +245,10 @@ static int _decode_value(unsigned val, uint8_t **pkt_pos_ptr, uint8_t *pkt_end)
             /* An 8-bit unsigned integer follows the initial byte and
                indicates the Option Delta minus 13. */
             if (left < 1) {
-                return -ENOSPC;
+                return NULL;
             }
             uint8_t delta = *pkt_pos++;
-            res = delta + 13;
+            *res = delta + 13;
             break;
         }
         case 14:
@@ -258,13 +257,13 @@ static int _decode_value(unsigned val, uint8_t **pkt_pos_ptr, uint8_t *pkt_end)
              * the initial byte and indicates the Option Delta minus
              * 269. */
             if (left < 2) {
-                return -ENOSPC;
+                return NULL;
             }
             uint16_t delta;
             uint8_t *_tmp = (uint8_t *)&delta;
             *_tmp++ = *pkt_pos++;
             *_tmp++ = *pkt_pos++;
-            res = ntohs(delta) + 269;
+            *res = ntohs(delta) + 269;
             break;
         }
         case 15:
@@ -272,13 +271,12 @@ static int _decode_value(unsigned val, uint8_t **pkt_pos_ptr, uint8_t *pkt_end)
              * this value but the entire byte is not the payload
              * marker, this MUST be processed as a message format
              * error. */
-            return -EBADMSG;
+            return NULL;
         default:
-            res = val;
+            *res = val;
     }
 
-    *pkt_pos_ptr = pkt_pos;
-    return res;
+    return pkt_pos;
 }
 
 static uint32_t _decode_uint(uint8_t *pkt_pos, unsigned nbytes)
