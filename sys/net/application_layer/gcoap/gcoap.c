@@ -472,9 +472,9 @@ static ssize_t _well_known_core_handler(coap_pkt_t* pdu, uint8_t *buf, size_t le
 static ssize_t _write_options(coap_pkt_t *pdu, uint8_t *buf, size_t len)
 {
     uint8_t last_optnum = 0;
-    (void)len;
 
     uint8_t *bufpos = buf + coap_get_total_hdr_len(pdu);  /* position for write */
+    uint8_t *bufend = buf + len;
 
     /* Observe for notification or registration response */
     if (coap_get_code_class(pdu) == COAP_CLASS_SUCCESS && coap_has_observe(pdu)) {
@@ -487,8 +487,8 @@ static ssize_t _write_options(coap_pkt_t *pdu, uint8_t *buf, size_t len)
                 break;
             }
         }
-        bufpos += coap_put_option(bufpos, last_optnum, COAP_OPT_OBSERVE,
-                                                       nbyte+i, 4-i);
+        bufpos += coap_put_option(bufpos, bufend, last_optnum,
+                                  COAP_OPT_OBSERVE, nbyte+i, 4-i);
         last_optnum = COAP_OPT_OBSERVE;
     }
 
@@ -500,22 +500,23 @@ static ssize_t _write_options(coap_pkt_t *pdu, uint8_t *buf, size_t len)
                 DEBUG("gcoap: _write_options: path does not start with '/'\n");
                 return -EINVAL;
             }
-            bufpos += coap_put_option_uri(bufpos, last_optnum, (char *)pdu->url,
-                                          COAP_OPT_URI_PATH);
+            bufpos += coap_put_option_uri(bufpos, bufend, last_optnum,
+                                          (char *)pdu->url, COAP_OPT_URI_PATH);
             last_optnum = COAP_OPT_URI_PATH;
         }
     }
 
     /* Content-Format */
     if (pdu->content_type != COAP_FORMAT_NONE) {
-        bufpos += coap_put_option_ct(bufpos, last_optnum, pdu->content_type);
+        bufpos += coap_put_option_ct(bufpos, bufend, last_optnum,
+                                     pdu->content_type);
         last_optnum = COAP_OPT_CONTENT_FORMAT;
     }
 
     /* Uri-query for requests */
     if (coap_get_code_class(pdu) == COAP_CLASS_REQ) {
-        bufpos += coap_put_option_uri(bufpos, last_optnum, (char *)pdu->qs,
-                                      COAP_OPT_URI_QUERY);
+        bufpos += coap_put_option_uri(bufpos, bufend, last_optnum,
+                                      (char *)pdu->qs, COAP_OPT_URI_QUERY);
         /* uncomment when further options are added below ... */
         /* last_optnum = COAP_OPT_URI_QUERY; */
     }
