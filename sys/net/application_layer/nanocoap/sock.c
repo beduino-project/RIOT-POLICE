@@ -45,7 +45,7 @@ ssize_t nanocoap_get(sock_udp_ep_t *remote, const char *path, uint8_t *buf, size
     uint8_t *pktpos = buf;
     uint8_t *pktend = buf + len;
 
-    pktpos += coap_build_hdr((coap_hdr_t *)pktpos, COAP_REQ, NULL, 0, COAP_METHOD_GET, 1);
+    pktpos += coap_build_hdr((coap_hdr_t *)pktpos, COAP_REQ, NULL, 0, buf, len, COAP_METHOD_GET, 1);
     pktpos += coap_put_option_uri(pktpos, pktend, 0, path, COAP_OPT_URI_PATH);
 
     /* TODO: timeout random between between ACK_TIMEOUT and (ACK_TIMEOUT *

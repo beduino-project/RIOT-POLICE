@@ -691,11 +691,11 @@ int gcoap_req_init(coap_pkt_t *pdu, uint8_t *buf, size_t len, unsigned code,
     }
     uint16_t msgid = (uint16_t)atomic_fetch_add(&_coap_state.next_message_id, 1);
     ssize_t hdrlen = coap_build_hdr(pdu->hdr, COAP_TYPE_NON, &token[0], GCOAP_TOKENLEN,
-                                    code, msgid);
+                                    buf, len, code, msgid);
 #else
     uint16_t msgid = (uint16_t)atomic_fetch_add(&_coap_state.next_message_id, 1);
     ssize_t hdrlen = coap_build_hdr(pdu->hdr, COAP_TYPE_NON, NULL, GCOAP_TOKENLEN,
-                                    code, msgid);
+                                    buf, len, code, msgid);
 #endif
 
     if (hdrlen > 0) {
@@ -874,7 +874,7 @@ int gcoap_obs_init(coap_pkt_t *pdu, uint8_t *buf, size_t len,
     pdu->hdr       = (coap_hdr_t *)buf;
     uint16_t msgid = (uint16_t)atomic_fetch_add(&_coap_state.next_message_id, 1);
     ssize_t hdrlen = coap_build_hdr(pdu->hdr, COAP_TYPE_NON, &memo->token[0],
-                                    memo->token_len, COAP_CODE_CONTENT, msgid);
+                                    memo->token_len, buf, len, COAP_CODE_CONTENT, msgid);
 
     if (hdrlen > 0) {
         uint32_t now       = xtimer_now_usec();
