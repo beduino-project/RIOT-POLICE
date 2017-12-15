@@ -359,7 +359,7 @@ ssize_t coap_build_hdr(coap_hdr_t *hdr, unsigned type,
  * length from @p olen and copying the option data from @p odata.
  *
  * @param[out]  buf         buffer to write to
- * @param[in]   blen        length of @p buf
+ * @param[in]   bend        end of buffer @p buf
  * @param[in]   lastonum    number of previous option (for delta calculation),
  *                          or 0 for first option
  * @param[in]   onum        number of option
@@ -368,26 +368,26 @@ ssize_t coap_build_hdr(coap_hdr_t *hdr, unsigned type,
  *
  * @returns     amount of bytes written to @p buf
  */
-size_t coap_put_option(uint8_t *buf, size_t blen, uint16_t lastonum, uint16_t onum, uint8_t *odata, size_t olen);
+size_t coap_put_option(uint8_t *buf, uint8_t *bend, uint16_t lastonum, uint16_t onum, uint8_t *odata, size_t olen);
 
 /**
  * @brief   Insert content type option into buffer
  *
  * @param[out]  buf             buffer to write to
- * @param[in]   len             length of @p buf
+ * @param[in]   end             end of buffer @p buf
  * @param[in]   lastonum        number of previous option (for delta
  *                              calculation), or 0 if first option
  * @param[in]   content_type    content type to set
  *
  * @returns     amount of bytes written to @p buf
  */
-size_t coap_put_option_ct(uint8_t *buf, size_t len, uint16_t lastonum, uint16_t content_type);
+size_t coap_put_option_ct(uint8_t *buf, uint8_t *end, uint16_t lastonum, uint16_t content_type);
 
 /**
  * @brief   Insert URI encoded option into buffer
  *
  * @param[out]  buf         buffer to write to
- * @param[in]   len         length of @p buf
+ * @param[in]   end         end of buffer @p buf
  * @param[in]   lastonum    number of previous option (for delta calculation),
  *                          or 0 if first option
  * @param[in]   uri         ptr to source URI
@@ -395,7 +395,7 @@ size_t coap_put_option_ct(uint8_t *buf, size_t len, uint16_t lastonum, uint16_t 
  *
  * @returns     amount of bytes written to @p buf
  */
-size_t coap_put_option_uri(uint8_t *buf, size_t len, uint16_t lastonum, const char *uri, uint16_t optnum);
+size_t coap_put_option_uri(uint8_t *buf, uint8_t *end, uint16_t lastonum, const char *uri, uint16_t optnum);
 
 /**
  * @brief   Get the CoAP version number

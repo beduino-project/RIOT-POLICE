@@ -185,7 +185,7 @@ ssize_t coap_reply_simple(coap_pkt_t *pkt,
     uint8_t *bufpos = payload_start;
 
     if (payload_len) {
-        bufpos += coap_put_option_ct(bufpos, len, 0, ct);
+        bufpos += coap_put_option_ct(bufpos, buf + len, 0, ct);
         *bufpos++ = 0xff;
 
         memcpy(bufpos, payload, payload_len);
@@ -301,8 +301,9 @@ static uint32_t _decode_uint(uint8_t *pkt_pos, uint8_t *pkt_end, unsigned nbytes
     return ntohl(res);
 }
 
-static unsigned _put_delta_optlen(uint8_t *buf, size_t len, unsigned offset, unsigned shift, unsigned val) {
-    if (offset + sizeof(uint16_t) > len) {
+static unsigned _put_delta_optlen(uint8_t *buf, uint8_t *end, unsigned offset, unsigned shift, unsigned val) {
+    size_t left = end - buf;
+    if (offset + sizeof(uint16_t) > left) {
         return 0;
     }
 
@@ -323,8 +324,9 @@ static unsigned _put_delta_optlen(uint8_t *buf, size_t len, unsigned offset, uns
     return offset;
 }
 
-size_t coap_put_option(uint8_t *buf, size_t blen, uint16_t lastonum, uint16_t onum, uint8_t *odata, size_t olen)
+size_t coap_put_option(uint8_t *buf, uint8_t *bend, uint16_t lastonum, uint16_t onum, uint8_t *odata, size_t olen)
 {
+    size_t left = bend - buf;
     assert(lastonum <= onum);
 
     unsigned delta = (onum - lastonum);
@@ -332,36 +334,36 @@ size_t coap_put_option(uint8_t *buf, size_t blen, uint16_t lastonum, uint16_t on
 
     /* write delta value to option header: 4 upper bits of header (shift 4) +
      * 1 or 2 optional bytes depending on delta value) */
-    unsigned n = _put_delta_optlen(buf, blen, 1, 4, delta);
+    unsigned n = _put_delta_optlen(buf, bend, 1, 4, delta);
     if (!n) {
         return 0;
     }
 
     /* write option length to option header: 4 lower bits of header (shift 0) +
      * 1 or 2 optional bytes depending of the length of the option */
-    n = _put_delta_optlen(buf, blen, n, 0, olen);
-    if (olen && n + olen <= blen) {
+    n = _put_delta_optlen(buf, bend, n, 0, olen);
+    if (olen && n && n + olen <= left) {
         memcpy(buf + n, odata, olen);
         n += olen;
     }
     return (size_t)n;
 }
 
-size_t coap_put_option_ct(uint8_t *buf, size_t len, uint16_t lastonum, uint16_t content_type)
+size_t coap_put_option_ct(uint8_t *buf, uint8_t *end, uint16_t lastonum, uint16_t content_type)
 {
     if (content_type == 0) {
-        return coap_put_option(buf, len, lastonum, COAP_OPT_CONTENT_FORMAT, NULL, 0);
+        return coap_put_option(buf, end, lastonum, COAP_OPT_CONTENT_FORMAT, NULL, 0);
     }
     else if (content_type <= 255) {
         uint8_t tmp = content_type;
-        return coap_put_option(buf, len, lastonum, COAP_OPT_CONTENT_FORMAT, &tmp, sizeof(tmp));
+        return coap_put_option(buf, end, lastonum, COAP_OPT_CONTENT_FORMAT, &tmp, sizeof(tmp));
     }
     else {
-        return coap_put_option(buf, len, lastonum, COAP_OPT_CONTENT_FORMAT, (uint8_t *)&content_type, sizeof(content_type));
+        return coap_put_option(buf, end, lastonum, COAP_OPT_CONTENT_FORMAT, (uint8_t *)&content_type, sizeof(content_type));
     }
 }
 
-size_t coap_put_option_uri(uint8_t *buf, size_t len, uint16_t lastonum, const char *uri, uint16_t optnum)
+size_t coap_put_option_uri(uint8_t *buf, uint8_t *end, uint16_t lastonum, const char *uri, uint16_t optnum)
 {
     char separator = (optnum == COAP_OPT_URI_PATH) ? '/' : '&';
     size_t uri_len = strlen(uri);
@@ -388,7 +390,7 @@ size_t coap_put_option_uri(uint8_t *buf, size_t len, uint16_t lastonum, const ch
         part_len = (uint8_t *)uripos - part_start;
 
         if (part_len) {
-            bufpos += coap_put_option(bufpos, len, lastonum, optnum, part_start, part_len);
+            bufpos += coap_put_option(bufpos, end, lastonum, optnum, part_start, part_len);
             lastonum = optnum;
         }
     }
@@ -404,7 +406,7 @@ ssize_t coap_well_known_core_default_handler(coap_pkt_t *pkt, uint8_t *buf, \
 
     uint8_t *bufpos = payload;
 
-    n = coap_put_option_ct(bufpos, len, 0, COAP_CT_LINK_FORMAT);
+    n = coap_put_option_ct(bufpos, buf + len, 0, COAP_CT_LINK_FORMAT);
     if (!n)
         return -1;
 
