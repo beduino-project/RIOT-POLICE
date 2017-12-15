@@ -394,6 +394,7 @@ static void _find_req_memo(gcoap_request_memo_t **memo_ptr, coap_pkt_t *src_pdu,
                            const sock_udp_ep_t *remote)
 {
     *memo_ptr = NULL;
+    uint8_t *buf;
     /* no need to initialize struct; we only care about buffer contents below */
     coap_pkt_t memo_pdu_data;
     coap_pkt_t *memo_pdu = &memo_pdu_data;
@@ -405,14 +406,15 @@ static void _find_req_memo(gcoap_request_memo_t **memo_ptr, coap_pkt_t *src_pdu,
 
         gcoap_request_memo_t *memo = &_coap_state.open_reqs[i];
         if (memo->send_limit == GCOAP_SEND_LIMIT_NON) {
-            memo_pdu->hdr = (coap_hdr_t *) &memo->msg.hdr_buf[0];
+            buf = &memo->msg.hdr_buf[0];
         }
         else {
-            memo_pdu->hdr = (coap_hdr_t *) memo->msg.data.pdu_buf;
+            buf = memo->msg.data.pdu_buf;
         }
 
+        memo_pdu->hdr = (coap_hdr_t *) buf;
         if (coap_get_token_len(memo_pdu) == cmplen) {
-            memo_pdu->token = &memo_pdu->hdr->data[0];
+            memo_pdu->token = buf + sizeof(coap_hdr_t);
             if ((memcmp(src_pdu->token, memo_pdu->token, cmplen) == 0)
                     && _endpoints_equal(&memo->remote_ep, remote)) {
                 *memo_ptr = memo;
