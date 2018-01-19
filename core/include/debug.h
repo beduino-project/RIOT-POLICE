@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include "sched.h"
 #include "thread.h"
+#include "checkedc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -94,7 +95,11 @@ extern "C" {
  *
  * @note Another name for ::DEBUG_PRINT
  */
+#ifdef USE_CHECKEDC
+#define DEBUG(...) if (ENABLE_DEBUG) unchecked { DEBUG_PRINT(__VA_ARGS__); }
+#else
 #define DEBUG(...) if (ENABLE_DEBUG) DEBUG_PRINT(__VA_ARGS__)
+#endif
 /** @} */
 
 /**
