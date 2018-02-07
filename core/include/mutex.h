@@ -25,6 +25,11 @@
 #include <stddef.h>
 
 #include "list.h"
+#include "checkedc.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
  extern "C" {
@@ -69,7 +74,7 @@ typedef struct {
  *          Only use the function call for dynamically allocated mutexes.
  * @param[out] mutex    pre-allocated mutex structure, must not be NULL.
  */
-static inline void mutex_init(mutex_t *mutex)
+static inline void mutex_init(mutex_t *mutex atype(ptr(mutex_t)))
 {
     mutex->queue.next = NULL;
 }
@@ -87,7 +92,7 @@ static inline void mutex_init(mutex_t *mutex)
  * @return 1 if mutex was unlocked, now it is locked.
  * @return 0 if the mutex was locked.
  */
-int _mutex_lock(mutex_t *mutex, int blocking);
+int _mutex_lock(mutex_t *mutex atype(ptr(mutex_t)), int blocking);
 
 /**
  * @brief Tries to get a mutex, non-blocking.
@@ -98,7 +103,7 @@ int _mutex_lock(mutex_t *mutex, int blocking);
  * @return 1 if mutex was unlocked, now it is locked.
  * @return 0 if the mutex was locked.
  */
-static inline int mutex_trylock(mutex_t *mutex)
+static inline int mutex_trylock(mutex_t *mutex atype(ptr(mutex_t)))
 {
     return _mutex_lock(mutex, 0);
 }
@@ -108,7 +113,7 @@ static inline int mutex_trylock(mutex_t *mutex)
  *
  * @param[in] mutex Mutex object to lock. Has to be initialized first. Must not be NULL.
  */
-static inline void mutex_lock(mutex_t *mutex)
+static inline void mutex_lock(mutex_t *mutex atype(ptr(mutex_t)))
 {
     _mutex_lock(mutex, 1);
 }
@@ -118,17 +123,21 @@ static inline void mutex_lock(mutex_t *mutex)
  *
  * @param[in] mutex Mutex object to unlock, must not be NULL.
  */
-void mutex_unlock(mutex_t *mutex);
+void mutex_unlock(mutex_t *mutex atype(ptr(mutex_t)));
 
 /**
  * @brief Unlocks the mutex and sends the current thread to sleep
  *
  * @param[in] mutex Mutex object to unlock, must not be NULL.
  */
-void mutex_unlock_and_sleep(mutex_t *mutex);
+void mutex_unlock_and_sleep(mutex_t *mutex atype(ptr(mutex_t)));
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* MUTEX_H */
