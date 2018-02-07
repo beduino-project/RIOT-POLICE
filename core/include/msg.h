@@ -167,7 +167,12 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "checkedc.h"
 #include "kernel_types.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -186,9 +191,9 @@ typedef struct {
                                      by msg_send. */
     uint16_t type;              /**< Type field. */
     union {
-        void *ptr;              /**< Pointer content field. */
-        uint32_t value;         /**< Value content field. */
-    } content;                  /**< Content of the message. */
+        void *ptr atype(ptr(void)); /**< Pointer content field. */
+        uint32_t value;             /**< Value content field. */
+    } content;                      /**< Content of the message. */
 } msg_t;
 
 
@@ -210,7 +215,7 @@ typedef struct {
  *            (it is not waiting or it's message queue is full)
  * @return -1, on error (invalid PID)
  */
-int msg_send(msg_t *m, kernel_pid_t target_pid);
+int msg_send(msg_t *m atype(ptr(msg_t)), kernel_pid_t target_pid);
 
 
 /**
@@ -229,7 +234,7 @@ int msg_send(msg_t *m, kernel_pid_t target_pid);
  * @return 0, if receiver is not waiting or has a full message queue
  * @return -1, on error (invalid PID)
  */
-int msg_try_send(msg_t *m, kernel_pid_t target_pid);
+int msg_try_send(msg_t *m atype(ptr(msg_t)), kernel_pid_t target_pid);
 
 
 /**
@@ -245,7 +250,7 @@ int msg_try_send(msg_t *m, kernel_pid_t target_pid);
  * @return 1 if sending was successful
  * @return 0 if the thread's message queue is full (or inexistent)
  */
-int msg_send_to_self(msg_t *m);
+int msg_send_to_self(msg_t *m atype(ptr(msg_t)));
 
 /**
  * Value of msg_t::sender_pid if the sender was an interrupt service routine.
@@ -270,7 +275,7 @@ int msg_send_to_self(msg_t *m);
  * @return 0, if receiver is not waiting and ``block == 0``
  * @return -1, on error (invalid PID)
  */
-int msg_send_int(msg_t *m, kernel_pid_t target_pid);
+int msg_send_int(msg_t *m atype(ptr(msg_t)), kernel_pid_t target_pid);
 
 /**
  * @brief Test if the message was sent inside an ISR.
@@ -279,7 +284,7 @@ int msg_send_int(msg_t *m, kernel_pid_t target_pid);
  * @returns `== 0` if *not* sent by an ISR
  * @returns `!= 0` if sent by an ISR
  */
-static inline int msg_sent_by_int(const msg_t *m)
+static inline int msg_sent_by_int(const msg_t *m atype(ptr(const msg_t)))
 {
     return (m->sender_pid == KERNEL_PID_ISR);
 }
@@ -294,7 +299,7 @@ static inline int msg_sent_by_int(const msg_t *m)
  *
  * @return  1, Function always succeeds or blocks forever.
  */
-int msg_receive(msg_t *m);
+int msg_receive(msg_t *m atype(ptr(msg_t)));
 
 /**
  * @brief Try to receive a message.
@@ -307,7 +312,7 @@ int msg_receive(msg_t *m);
  * @return  1, if a message was received
  * @return  -1, otherwise.
  */
-int msg_try_receive(msg_t *m);
+int msg_try_receive(msg_t *m atype(ptr(msg_t)));
 
 /**
  * @brief Send a message, block until reply received.
@@ -325,7 +330,8 @@ int msg_try_receive(msg_t *m);
  *
  * @return  1, if successful.
  */
-int msg_send_receive(msg_t *m, msg_t *reply, kernel_pid_t target_pid);
+int msg_send_receive(msg_t *m atype(ptr(msg_t)),
+                     msg_t *reply atype(ptr(msg_t)), kernel_pid_t target_pid);
 
 /**
  * @brief Replies to a message.
@@ -338,7 +344,7 @@ int msg_send_receive(msg_t *m, msg_t *reply, kernel_pid_t target_pid);
  * @return 1, if successful
  * @return -1, on error
  */
-int msg_reply(msg_t *m, msg_t *reply);
+int msg_reply(msg_t *m atype(ptr(msg_t)), msg_t *reply atype(ptr(msg_t)));
 
 /**
  * @brief Replies to a message from interrupt.
@@ -352,7 +358,7 @@ int msg_reply(msg_t *m, msg_t *reply);
  * @return 1, if successful
  * @return -1, on error
  */
-int msg_reply_int(msg_t *m, msg_t *reply);
+int msg_reply_int(msg_t *m atype(ptr(msg_t)), msg_t *reply atype(ptr(msg_t)));
 
 /**
  * @brief Check how many messages are available in the message queue
@@ -372,7 +378,7 @@ int msg_avail(void);
  * @param[in] num   Number of ``msg_t`` structures in array.
  *                  **MUST BE POWER OF TWO!**
  */
-void msg_init_queue(msg_t *array, int num);
+void msg_init_queue(msg_t *array acount(num), int num);
 
 /**
  * @brief   Prints the message queue of the current thread.
@@ -381,6 +387,10 @@ void msg_queue_print(void);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* MSG_H */
