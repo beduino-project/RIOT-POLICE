@@ -64,7 +64,8 @@ extern "C" {
  * @return  -EFAULT if @p hdr or @p pseudo_hdr is NULL
  * @return  -ENOENT if gnrc_pktsnip_t::type of @p pseudo_hdr is not known
  */
-int gnrc_udp_calc_csum(gnrc_pktsnip_t *hdr, gnrc_pktsnip_t *pseudo_hdr);
+int gnrc_udp_calc_csum(gnrc_pktsnip_t *hdr atype(ptr(gnrc_pktsnip_t)),
+                       gnrc_pktsnip_t *pseudo_hdr atype(ptr(gnrc_pktsnip_t)));
 
 /**
  * @brief   Allocate and initialize a fresh UDP header in the packet buffer
