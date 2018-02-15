@@ -135,10 +135,10 @@ extern "C" {
 
 #define LL_SORT2(list, cmp, next)                                                              \
 do {                                                                                           \
-  LDECLTYPE(list) _ls_p;                                                                       \
-  LDECLTYPE(list) _ls_q;                                                                       \
-  LDECLTYPE(list) _ls_e;                                                                       \
-  LDECLTYPE(list) _ls_tail;                                                                    \
+  LDECLTYPE(list) _ls_p = NULL;                                                                \
+  LDECLTYPE(list) _ls_q = NULL;                                                                \
+  LDECLTYPE(list) _ls_e = NULL;                                                                \
+  LDECLTYPE(list) _ls_tail = NULL;                                                             \
   int _ls_insize, _ls_nmerges, _ls_psize, _ls_qsize, _ls_i, _ls_looping;                       \
   if (list) {                                                                                  \
     _ls_insize = 1;                                                                            \
@@ -198,10 +198,10 @@ do {                                                                            
 
 #define DL_SORT2(list, cmp, prev, next)                                                        \
 do {                                                                                           \
-  LDECLTYPE(list) _ls_p;                                                                       \
-  LDECLTYPE(list) _ls_q;                                                                       \
-  LDECLTYPE(list) _ls_e;                                                                       \
-  LDECLTYPE(list) _ls_tail;                                                                    \
+  LDECLTYPE(list) _ls_p = NULL;                                                                \
+  LDECLTYPE(list) _ls_q = NULL;                                                                \
+  LDECLTYPE(list) _ls_e = NULL;                                                                \
+  LDECLTYPE(list) _ls_tail = NULL;                                                             \
   int _ls_insize, _ls_nmerges, _ls_psize, _ls_qsize, _ls_i, _ls_looping;                       \
   if (list) {                                                                                  \
     _ls_insize = 1;                                                                            \
@@ -354,7 +354,7 @@ do {                                                                            
 /** @brief LL concat with alternative next ptr name 'next' */
 #define LL_CONCAT2(head1,head2,next)                                                           \
 do {                                                                                           \
-  LDECLTYPE(head1) _tmp;                                                                       \
+  LDECLTYPE(head1) _tmp = NULL;                                                                \
   if (head1) {                                                                                 \
     _tmp = head1;                                                                              \
     while (_tmp->next) { _tmp = _tmp->next; }                                                  \
@@ -371,7 +371,7 @@ do {                                                                            
 /** @brief LL append with alternative next ptr name 'next' */
 #define LL_APPEND2(head,add,next)                                                              \
 do {                                                                                           \
-  LDECLTYPE(head) _tmp;                                                                        \
+  LDECLTYPE(head) _tmp = NULL;                                                                 \
   (add)->next=NULL;                                                                            \
   if (head) {                                                                                  \
     _tmp = head;                                                                               \
@@ -389,7 +389,7 @@ do {                                                                            
 /** @brief LL delete with alternative next ptr name 'name' */
 #define LL_DELETE2(head,del,next)                                                              \
 do {                                                                                           \
-  LDECLTYPE(head) _tmp;                                                                        \
+  LDECLTYPE(head) _tmp = NULL;                                                                 \
   if ((head) == (del)) {                                                                       \
     (head)=(head)->next;                                                                       \
   } else {                                                                                     \
@@ -511,7 +511,7 @@ do {                                                                            
 /** @brief LL replace element 'el' with element 'add' in list */
 #define LL_REPLACE_ELEM(head, el, add)                                                         \
 do {                                                                                           \
- LDECLTYPE(head) _tmp;                                                                         \
+ LDECLTYPE(head) _tmp = NULL;                                                                  \
  assert(head != NULL);                                                                         \
  assert(el != NULL);                                                                           \
  assert(add != NULL);                                                                          \
@@ -532,7 +532,7 @@ do {                                                                            
 /** @brief LL prepend new element 'add' to element 'el' in list */
 #define LL_PREPEND_ELEM(head, el, add)                                                         \
 do {                                                                                           \
- LDECLTYPE(head) _tmp;                                                                         \
+ LDECLTYPE(head) _tmp = NULL;                                                                  \
  assert(head != NULL);                                                                         \
  assert(el != NULL);                                                                           \
  assert(add != NULL);                                                                          \
@@ -598,7 +598,7 @@ do {                                                                            
 /** @brief DL concat with alternative next ptr name 'next' */
 #define DL_CONCAT2(head1,head2,prev,next)                                                      \
 do {                                                                                           \
-  LDECLTYPE(head1) _tmp;                                                                       \
+  LDECLTYPE(head1) _tmp = NULL;                                                                \
   if (head2) {                                                                                 \
     if (head1) {                                                                               \
         _tmp = (head2)->prev;                                                                  \
