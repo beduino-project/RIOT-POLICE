@@ -17,6 +17,7 @@
 
 #include "assert.h"
 #include "utlist.h"
+#include "checkedc.h"
 #include "net/gnrc/netreg.h"
 #include "net/gnrc/nettype.h"
 #include "net/gnrc/pkt.h"
@@ -25,18 +26,24 @@
 #include "net/gnrc/udp.h"
 #include "net/gnrc/tcp.h"
 
+#ifdef USE_CHECKEDC
+#include "string_checked.h"
+#pragma BOUNDS_CHECKED ON
+#endif
+
 #define _INVALID_TYPE(type) (((type) < GNRC_NETTYPE_UNDEF) || ((type) >= GNRC_NETTYPE_NUMOF))
 
 /* The registry as lookup table by gnrc_nettype_t */
-static gnrc_netreg_entry_t *netreg[GNRC_NETTYPE_NUMOF];
+static ptr(gnrc_netreg_entry_t) netreg checked[GNRC_NETTYPE_NUMOF];
 
 void gnrc_netreg_init(void)
 {
     /* set all pointers in registry to NULL */
-    memset(netreg, 0, GNRC_NETTYPE_NUMOF * sizeof(gnrc_netreg_entry_t *));
+    memset(netreg, 0, GNRC_NETTYPE_NUMOF * sizeof(ptr(gnrc_netreg_entry_t)));
 }
 
-int gnrc_netreg_register(gnrc_nettype_t type, gnrc_netreg_entry_t *entry)
+int gnrc_netreg_register(gnrc_nettype_t type,
+                         gnrc_netreg_entry_t *entry atype(ptr(gnrc_netreg_entry_t)))
 {
 #if defined(MODULE_GNRC_NETAPI_MBOX) || defined(MODULE_GNRC_NETAPI_CALLBACKS)
 #ifdef DEVELHELP
@@ -58,7 +65,8 @@ int gnrc_netreg_register(gnrc_nettype_t type, gnrc_netreg_entry_t *entry)
     return 0;
 }
 
-void gnrc_netreg_unregister(gnrc_nettype_t type, gnrc_netreg_entry_t *entry)
+void gnrc_netreg_unregister(gnrc_nettype_t type,
+                            gnrc_netreg_entry_t *entry atype(ptr(gnrc_netreg_entry_t)))
 {
     if (_INVALID_TYPE(type)) {
         return;
@@ -68,9 +76,9 @@ void gnrc_netreg_unregister(gnrc_nettype_t type, gnrc_netreg_entry_t *entry)
 }
 
 gnrc_netreg_entry_t *gnrc_netreg_lookup(gnrc_nettype_t type, uint32_t demux_ctx)
+        atype(ptr(gnrc_netreg_entry_t))
 {
-    gnrc_netreg_entry_t *res;
-
+    ptr(gnrc_netreg_entry_t) res = NULL;
     if (_INVALID_TYPE(type)) {
         return NULL;
     }
@@ -83,13 +91,12 @@ gnrc_netreg_entry_t *gnrc_netreg_lookup(gnrc_nettype_t type, uint32_t demux_ctx)
 int gnrc_netreg_num(gnrc_nettype_t type, uint32_t demux_ctx)
 {
     int num = 0;
-    gnrc_netreg_entry_t *entry;
 
     if (_INVALID_TYPE(type)) {
         return 0;
     }
 
-    entry = netreg[type];
+    ptr(gnrc_netreg_entry_t) entry = netreg[type];
 
     while (entry != NULL) {
         if (entry->demux_ctx == demux_ctx) {
@@ -102,7 +109,8 @@ int gnrc_netreg_num(gnrc_nettype_t type, uint32_t demux_ctx)
     return num;
 }
 
-gnrc_netreg_entry_t *gnrc_netreg_getnext(gnrc_netreg_entry_t *entry)
+gnrc_netreg_entry_t *gnrc_netreg_getnext(gnrc_netreg_entry_t *entry atype(ptr(gnrc_netreg_entry_t)))
+        atype(ptr(gnrc_netreg_entry_t))
 {
     uint32_t demux_ctx;
 
@@ -117,7 +125,8 @@ gnrc_netreg_entry_t *gnrc_netreg_getnext(gnrc_netreg_entry_t *entry)
     return entry;
 }
 
-int gnrc_netreg_calc_csum(gnrc_pktsnip_t *hdr, gnrc_pktsnip_t *pseudo_hdr)
+int gnrc_netreg_calc_csum(gnrc_pktsnip_t *hdr atype(ptr(gnrc_pktsnip_t)),
+                          gnrc_pktsnip_t *pseudo_hdr atype(ptr(gnrc_pktsnip_t)))
 {
     if (pseudo_hdr == NULL) {
         /* XXX: Might be allowed for future checksums.
