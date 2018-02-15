@@ -73,7 +73,8 @@ gnrc_pktsnip_t *gnrc_icmpv6_build(gnrc_pktsnip_t *next, uint8_t type, uint8_t co
  * @return  -ENOENT, if gnrc_pktsnip_t::type of @p pseudo_hdr was not
  *          GNRC_NETTYPE_IPV6
  */
-int gnrc_icmpv6_calc_csum(gnrc_pktsnip_t *hdr, gnrc_pktsnip_t *pseudo_hdr);
+int gnrc_icmpv6_calc_csum(gnrc_pktsnip_t *hdr atype(ptr(gnrc_pktsnip_t)),
+                          gnrc_pktsnip_t *pseudo_hdr atype(ptr(gnrc_pktsnip_t)));
 
 #ifdef __cplusplus
 }

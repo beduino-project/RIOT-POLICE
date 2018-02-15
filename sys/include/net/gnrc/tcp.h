@@ -198,7 +198,8 @@ void gnrc_tcp_abort(gnrc_tcp_tcb_t *tcb);
  *            -EBADMSG if @p hdr is not of type GNRC_NETTYPE_TCP
  *            -ENOENT if @p pseudo_hdr protocol is unsupported.
  */
-int gnrc_tcp_calc_csum(const gnrc_pktsnip_t *hdr, const gnrc_pktsnip_t *pseudo_hdr);
+int gnrc_tcp_calc_csum(const gnrc_pktsnip_t *hdr atype(ptr(const gnrc_pktsnip_t)),
+                       const gnrc_pktsnip_t *pseudo_hdr atype(ptr(const gnrc_pktsnip_t)));
 
 /**
  * @brief Adds a TCP header to a given payload.
