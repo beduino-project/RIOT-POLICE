@@ -24,9 +24,14 @@
 
 #include <stdint.h>
 
+#include "checkedc.h"
 #include "byteorder.h"
 #include "net/gnrc.h"
 #include "net/udp.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,8 +83,9 @@ int gnrc_udp_calc_csum(gnrc_pktsnip_t *hdr atype(ptr(gnrc_pktsnip_t)),
  * @return  NULL on `src == NULL`, `dst == NULL`, `src_len != 2`, `dst_len != 2`
  *          or on allocation error
  */
-gnrc_pktsnip_t *gnrc_udp_hdr_build(gnrc_pktsnip_t *payload, uint16_t src,
-                                   uint16_t dst);
+gnrc_pktsnip_t *gnrc_udp_hdr_build(gnrc_pktsnip_t *payload atype(ptr(gnrc_pktsnip_t)),
+                                   uint16_t src, uint16_t dst)
+    atype(ptr(gnrc_pktsnip_t));
 
 /**
  * @brief   Initialize and start UDP
@@ -91,6 +97,10 @@ int gnrc_udp_init(void);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_UDP_H */
