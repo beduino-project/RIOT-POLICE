@@ -20,12 +20,17 @@
 
 #include "mbox.h"
 #include "msg.h"
+#include "checkedc.h"
 #include "net/gnrc/netreg.h"
 #include "net/gnrc/pktbuf.h"
 #include "net/gnrc/netapi.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 /**
  * @brief   Unified function for getting and setting netapi options
@@ -40,7 +45,8 @@
  */
 static inline int _get_set(kernel_pid_t pid, uint16_t type,
                            netopt_t opt, uint16_t context,
-                           void *data, size_t data_len)
+                           array_ptr(void) data abyte_count(data_len),
+                           size_t data_len)
 {
     msg_t cmd;
     msg_t ack;
@@ -52,7 +58,7 @@ static inline int _get_set(kernel_pid_t pid, uint16_t type,
     o.data_len = data_len;
     /* set outgoing message's fields */
     cmd.type = type;
-    cmd.content.ptr = (void *)&o;
+    cmd.content.ptr = (ptr(void))&o;
     /* trigger the netapi */
     msg_send_receive(&cmd, &ack, pid);
     assert(ack.type == GNRC_NETAPI_MSG_TYPE_ACK);
@@ -60,12 +66,12 @@ static inline int _get_set(kernel_pid_t pid, uint16_t type,
     return (int)ack.content.value;
 }
 
-static inline int _snd_rcv(kernel_pid_t pid, uint16_t type, gnrc_pktsnip_t *pkt)
+static inline int _snd_rcv(kernel_pid_t pid, uint16_t type, ptr(gnrc_pktsnip_t) pkt)
 {
     msg_t msg;
     /* set the outgoing message's fields */
     msg.type = type;
-    msg.content.ptr = (void *)pkt;
+    msg.content.ptr = (ptr(void))pkt;
     /* send message */
     int ret = msg_try_send(&msg, pid);
     if (ret < 1) {
@@ -76,12 +82,13 @@ static inline int _snd_rcv(kernel_pid_t pid, uint16_t type, gnrc_pktsnip_t *pkt)
 }
 
 #ifdef MODULE_GNRC_NETAPI_MBOX
-static inline int _snd_rcv_mbox(mbox_t *mbox, uint16_t type, gnrc_pktsnip_t *pkt)
+static inline int _snd_rcv_mbox(ptr(mbox_t) mbox, uint16_t type,
+                                ptr(gnrc_pktsnip_t) pkt)
 {
     msg_t msg;
     /* set the outgoing message's fields */
     msg.type = type;
-    msg.content.ptr = (void *)pkt;
+    msg.content.ptr = (ptr(void))pkt;
     /* send message */
     int ret = mbox_try_put(mbox, &msg);
     if (ret < 1) {
@@ -92,12 +99,12 @@ static inline int _snd_rcv_mbox(mbox_t *mbox, uint16_t type, gnrc_pktsnip_t *pkt
 #endif
 
 int gnrc_netapi_dispatch(gnrc_nettype_t type, uint32_t demux_ctx,
-                         uint16_t cmd, gnrc_pktsnip_t *pkt)
+                         uint16_t cmd, gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)))
 {
     int numof = gnrc_netreg_num(type, demux_ctx);
 
     if (numof != 0) {
-        gnrc_netreg_entry_t *sendto = gnrc_netreg_lookup(type, demux_ctx);
+        ptr(gnrc_netreg_entry_t) sendto = gnrc_netreg_lookup(type, demux_ctx);
 
         gnrc_pktbuf_hold(pkt, numof - 1);
 
@@ -145,25 +152,25 @@ int gnrc_netapi_dispatch(gnrc_nettype_t type, uint32_t demux_ctx,
     return numof;
 }
 
-int gnrc_netapi_send(kernel_pid_t pid, gnrc_pktsnip_t *pkt)
+int gnrc_netapi_send(kernel_pid_t pid, gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)))
 {
     return _snd_rcv(pid, GNRC_NETAPI_MSG_TYPE_SND, pkt);
 }
 
-int gnrc_netapi_receive(kernel_pid_t pid, gnrc_pktsnip_t *pkt)
+int gnrc_netapi_receive(kernel_pid_t pid, gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)))
 {
     return _snd_rcv(pid, GNRC_NETAPI_MSG_TYPE_RCV, pkt);
 }
 
 int gnrc_netapi_get(kernel_pid_t pid, netopt_t opt, uint16_t context,
-                    void *data, size_t data_len)
+                    void *data abyte_count(data_len), size_t data_len)
 {
     return _get_set(pid, GNRC_NETAPI_MSG_TYPE_GET, opt, context,
                     data, data_len);
 }
 
 int gnrc_netapi_set(kernel_pid_t pid, netopt_t opt, uint16_t context,
-                    void *data, size_t data_len)
+                    void *data abyte_count(data_len), size_t data_len)
 {
     return _get_set(pid, GNRC_NETAPI_MSG_TYPE_SET, opt, context,
                     data, data_len);

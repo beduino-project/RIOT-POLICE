@@ -59,9 +59,14 @@
 #define NET_GNRC_NETAPI_H
 
 #include "thread.h"
+#include "checkedc.h"
 #include "net/netopt.h"
 #include "net/gnrc/nettype.h"
 #include "net/gnrc/pkt.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,10 +102,10 @@ extern "C" {
  *          and getting (@ref GNRC_NETAPI_MSG_TYPE_GET) options
  */
 typedef struct {
-    netopt_t opt;               /**< the option to get/set */
-    uint16_t context;           /**< (optional) context for that option */
-    void *data;                 /**< data to set or buffer to read into */
-    uint16_t data_len;          /**< size of the data / the buffer */
+    netopt_t opt;                     /**< the option to get/set */
+    uint16_t context;                 /**< (optional) context for that option */
+    void *data abyte_count(data_len); /**< data to set or buffer to read into */
+    uint16_t data_len;                /**< size of the data / the buffer */
 } gnrc_netapi_opt_t;
 
 /**
@@ -112,7 +117,8 @@ typedef struct {
  * @return              1 if packet was successfully delivered
  * @return              -1 on error (invalid PID or no space in queue)
  */
-int gnrc_netapi_send(kernel_pid_t pid, gnrc_pktsnip_t *pkt);
+int gnrc_netapi_send(kernel_pid_t pid,
+                     gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)));
 
 /**
  * @brief   Sends @p cmd to all subscribers to (@p type, @p demux_ctx).
@@ -125,7 +131,7 @@ int gnrc_netapi_send(kernel_pid_t pid, gnrc_pktsnip_t *pkt);
  * @return Number of subscribers to (@p type, @p demux_ctx).
  */
 int gnrc_netapi_dispatch(gnrc_nettype_t type, uint32_t demux_ctx, uint16_t cmd,
-                         gnrc_pktsnip_t *pkt);
+                         gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)));
 
 /**
  * @brief   Sends a @ref GNRC_NETAPI_MSG_TYPE_SND command to all subscribers to
@@ -138,7 +144,7 @@ int gnrc_netapi_dispatch(gnrc_nettype_t type, uint32_t demux_ctx, uint16_t cmd,
  * @return Number of subscribers to (@p type, @p demux_ctx).
  */
 static inline int gnrc_netapi_dispatch_send(gnrc_nettype_t type, uint32_t demux_ctx,
-                                            gnrc_pktsnip_t *pkt)
+                                            gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)))
 {
     return gnrc_netapi_dispatch(type, demux_ctx, GNRC_NETAPI_MSG_TYPE_SND, pkt);
 }
@@ -152,7 +158,7 @@ static inline int gnrc_netapi_dispatch_send(gnrc_nettype_t type, uint32_t demux_
  * @return              1 if packet was successfully delivered
  * @return              -1 on error (invalid PID or no space in queue)
  */
-int gnrc_netapi_receive(kernel_pid_t pid, gnrc_pktsnip_t *pkt);
+int gnrc_netapi_receive(kernel_pid_t pid, gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)));
 
 /**
  * @brief   Sends a @ref GNRC_NETAPI_MSG_TYPE_RCV command to all subscribers to
@@ -165,7 +171,7 @@ int gnrc_netapi_receive(kernel_pid_t pid, gnrc_pktsnip_t *pkt);
  * @return Number of subscribers to (@p type, @p demux_ctx).
  */
 static inline int gnrc_netapi_dispatch_receive(gnrc_nettype_t type, uint32_t demux_ctx,
-                                               gnrc_pktsnip_t *pkt)
+                                               gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)))
 {
     return gnrc_netapi_dispatch(type, demux_ctx, GNRC_NETAPI_MSG_TYPE_RCV, pkt);
 }
@@ -186,7 +192,7 @@ static inline int gnrc_netapi_dispatch_receive(gnrc_nettype_t type, uint32_t dem
  *                      sensible to indicate what went wrong.
  */
 int gnrc_netapi_get(kernel_pid_t pid, netopt_t opt, uint16_t context,
-                    void *data, size_t max_len);
+                    void *data abyte_count(max_len), size_t max_len);
 
 /**
  * @brief   Shortcut function for sending @ref GNRC_NETAPI_MSG_TYPE_SET messages and
@@ -204,10 +210,14 @@ int gnrc_netapi_get(kernel_pid_t pid, netopt_t opt, uint16_t context,
  *                      wrong.
  */
 int gnrc_netapi_set(kernel_pid_t pid, netopt_t opt, uint16_t context,
-                    void *data, size_t data_len);
+                    void *data abyte_count(data_len), size_t data_len);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_NETAPI_H */
