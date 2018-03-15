@@ -124,9 +124,14 @@
 #include "msg.h"
 #include "cpu_conf.h"
 #include "sched.h"
+#include "checkedc.h"
 
 #ifdef MODULE_CORE_THREAD_FLAGS
 #include "thread_flags.h"
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
 #endif
 
 #ifdef __cplusplus
@@ -169,45 +174,47 @@
 /**
  * @brief Prototype for a thread entry function
  */
-typedef void *(*thread_task_func_t)(void *arg);
+typedef void *(thread_task_func_t)(void *arg atype(ptr(void)))
+    atype(ptr(void));
 
 /**
  * @brief @c thread_t holds thread's context data.
  */
 struct _thread {
-    char *sp;                       /**< thread's stack pointer         */
-    uint8_t status;                 /**< thread's status                */
-    uint8_t priority;               /**< thread's priority              */
+    char *sp atype(ptr(char));            /**< thread's stack pointer         */
+    uint8_t status;                       /**< thread's status                */
+    uint8_t priority;                     /**< thread's priority              */
 
-    kernel_pid_t pid;               /**< thread's process id            */
+    kernel_pid_t pid;                     /**< thread's process id            */
 
 #if defined(MODULE_CORE_THREAD_FLAGS) || defined(DOXYGEN)
-    thread_flags_t flags;           /**< currently set flags            */
+    thread_flags_t flags;                 /**< currently set flags            */
 #endif
 
-    clist_node_t rq_entry;          /**< run queue entry                */
+    clist_node_t rq_entry;                /**< run queue entry                */
 
 #if defined(MODULE_CORE_MSG) || defined(MODULE_CORE_THREAD_FLAGS) \
     || defined(MODULE_CORE_MBOX) || defined(DOXYGEN)
-    void *wait_data;                /**< used by msg, mbox and thread
-                                         flags                          */
+    void *wait_data atype(ptr(void));     /**< used by msg, mbox and thread
+                                               flags                          */
 #endif
 #if defined(MODULE_CORE_MSG) || defined(DOXYGEN)
-    list_node_t msg_waiters;        /**< threads waiting for their message
-                                         to be delivered to this thread
-                                         (i.e. all blocked sends)       */
-    cib_t msg_queue;                /**< index of this [thread's message queue]
-                                         (thread_t::msg_array), if any  */
-    msg_t *msg_array;               /**< memory holding messages sent
-                                         to this thread's message queue */
+    list_node_t msg_waiters;              /**< threads waiting for their message
+                                               to be delivered to this thread
+                                               (i.e. all blocked sends)       */
+    cib_t msg_queue;                      /**< index of this [thread's message queue]
+                                               (thread_t::msg_array), if any  */
+    msg_t *msg_array atype(ptr(msg_t));   /**< memory holding messages sent
+                                               to this thread's message queue */
 #endif
 #if defined(DEVELHELP) || defined(SCHED_TEST_STACK) \
     || defined(MODULE_MPU_STACK_GUARD) || defined(DOXYGEN)
-    char *stack_start;              /**< thread's stack start address   */
+    char *stack_start atype(ptr(char));   /**< thread's stack start address   */
 #endif
 #if defined(DEVELHELP) || defined(DOXYGEN)
-    const char *name;               /**< thread's name                  */
-    int stack_size;                 /**< thread's stack size            */
+    const char *name
+        atype(nt_array_ptr(const char));  /**< thread's name                  */
+    int stack_size;                       /**< thread's stack size            */
 #endif
 };
 
@@ -340,13 +347,13 @@ struct _thread {
  *                      @ref SCHED_PRIO_LEVELS
  * @return              -EOVERFLOW, if there are too many threads running already
 */
-kernel_pid_t thread_create(char *stack,
+kernel_pid_t thread_create(char *stack acount(stacksize),
                   int stacksize,
                   char priority,
                   int flags,
-                  thread_task_func_t task_func,
-                  void *arg,
-                  const char *name);
+                  thread_task_func_t *task_func atype(ptr(thread_task_func_t)),
+                  void *arg atype(ptr(void)),
+                  const char *name atype(nt_array_ptr(const char)));
 
 /**
  * @brief       Retreive a thread control block by PID.
@@ -355,7 +362,8 @@ kernel_pid_t thread_create(char *stack,
  * @param[in]   pid   Thread to retreive.
  * @return      `NULL` if the PID is invalid or there is no such thread.
  */
-volatile thread_t *thread_get(kernel_pid_t pid);
+volatile thread_t *thread_get(kernel_pid_t pid)
+    atype(ptr(volatile thread_t));
 
 /**
  * @brief Returns the status of a process
@@ -430,7 +438,11 @@ static inline kernel_pid_t thread_getpid(void)
  *
  * @return stack pointer
  */
-char *thread_stack_init(thread_task_func_t task_func, void *arg, void *stack_start, int stack_size);
+char *thread_stack_init(thread_task_func_t *task_func atype(ptr(thread_task_func_t)),
+                        void *arg atype(ptr(void)),
+                        void *stack_start abyte_count(stack_size),
+                        int stack_size)
+    atype(ptr(char));
 
 /**
  * @brief Add thread to list, sorted by priority (internal)
@@ -445,7 +457,8 @@ char *thread_stack_init(thread_task_func_t task_func, void *arg, void *stack_sta
  * @param[in] list      ptr to list root node
  * @param[in] thread    thread to add
  */
-void thread_add_to_list(list_node_t *list, thread_t *thread);
+void thread_add_to_list(list_node_t *list atype(ptr(list_node_t)),
+                        thread_t *thread atype(ptr(thread_t)));
 
 /**
  * @brief Returns the name of a process
@@ -457,7 +470,8 @@ void thread_add_to_list(list_node_t *list, thread_t *thread);
  * @return          the threads name
  * @return          `NULL` if pid is unknown
  */
-const char *thread_getname(kernel_pid_t pid);
+const char *thread_getname(kernel_pid_t pid)
+    atype(nt_array_ptr(const char));
 
 #ifdef DEVELHELP
 /**
@@ -469,7 +483,7 @@ const char *thread_getname(kernel_pid_t pid);
  *
  * @return          the amount of unused space of the thread's stack
  */
-uintptr_t thread_measure_stack_free(char *stack);
+uintptr_t thread_measure_stack_free(char *stack atype(ptr(char)));
 #endif /* DEVELHELP */
 
 /**
@@ -480,12 +494,14 @@ int thread_isr_stack_usage(void);
 /**
  * @brief   Get the current ISR stack pointer
  */
-void *thread_isr_stack_pointer(void);
+void *thread_isr_stack_pointer(void)
+    atype(ptr(void));
 
 /**
  * @brief   Get the start of the ISR stack
  */
-void *thread_isr_stack_start(void);
+void *thread_isr_stack_start(void)
+    atype(ptr(void));
 
 /**
  * @brief Print the current stack to stdout
@@ -499,6 +515,10 @@ void thread_print_stack(void);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 /** @} */
