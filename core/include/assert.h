@@ -23,6 +23,7 @@
 #define ASSERT_H
 
 #include "panic.h"
+#include "checkedc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -102,11 +103,14 @@ NORETURN void _assert_failure(const char *file, unsigned line);
  * @see http://pubs.opengroup.org/onlinepubs/9699919799/functions/assert.html
  */
 #define assert(cond) \
-    if (!(cond)) { \
+    if (!(cond)) unchecked { \
         _assert_failure(RIOT_FILE_RELATIVE, __LINE__); \
     }
 #else
-#define assert(cond) ((cond) ? (void)0 : core_panic(PANIC_ASSERT_FAIL, assert_crash_message))
+#define assert(cond) \
+    if (!(cond)) unchecked { \
+        core_panic(PANIC_ASSERT_FAIL, assert_crash_message); \
+    }
 #endif
 
 #if !defined __cplusplus

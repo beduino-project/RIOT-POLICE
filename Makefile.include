@@ -127,7 +127,6 @@ endif
 # version of the clang compiler toolchain.
 CHECKEDC ?= 0
 ifeq ($(CHECKEDC),1)
-  CFLAGS += -DNDEBUG
   CFLAGS += -DUSE_CHECKEDC
   ifneq ($(CHECKEDC_CHECK_BOUNDS),1)
       CFLAGS += -Wno-check-bounds-decls
