@@ -25,6 +25,11 @@
 #include "list.h"
 #include "cib.h"
 #include "msg.h"
+#include "checkedc.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,7 +45,8 @@ typedef struct {
     list_node_t readers;    /**< list of threads waiting for message    */
     list_node_t writers;    /**< list of threads waiting to send        */
     cib_t cib;              /**< cib for msg array                      */
-    msg_t *msg_array;       /**< ptr to array of msg queue              */
+    msg_t *msg_array
+        atype(ptr(msg_t));  /**< ptr to array of msg queue              */
 } mbox_t;
 
 enum {
@@ -57,7 +63,9 @@ enum {
  * @param[in]   queue       array of msg_t used as queue
  * @param[in]   queue_size  number of msg_t objects in queue
  */
-static inline void mbox_init(mbox_t *mbox, msg_t *queue, unsigned int queue_size)
+static inline void mbox_init(mbox_t *mbox atype(ptr(mbox_t)),
+                             msg_t *queue atype(ptr(msg_t)),
+                             unsigned int queue_size)
 {
     mbox_t m = MBOX_INIT(queue, queue_size);
     *mbox = m;
@@ -77,7 +85,8 @@ static inline void mbox_init(mbox_t *mbox, msg_t *queue, unsigned int queue_size
  * @return  1   if msg could be delivered
  * @return  0   otherwise
  */
-int _mbox_put(mbox_t *mbox, msg_t *msg, int blocking);
+int _mbox_put(mbox_t *mbox atype(ptr(mbox_t)),
+              msg_t *msg atype(ptr(msg_t)), int blocking);
 
 /**
  * @brief Get message from mailbox
@@ -93,7 +102,8 @@ int _mbox_put(mbox_t *mbox, msg_t *msg, int blocking);
  * @return  1   if msg could be retrieved
  * @return  0   otherwise
  */
-int _mbox_get(mbox_t *mbox, msg_t *msg, int blocking);
+int _mbox_get(mbox_t *mbox atype(ptr(mbox_t)),
+              msg_t *msg atype(ptr(msg_t)), int blocking);
 
 /**
  * @brief Add message to mailbox
@@ -104,7 +114,8 @@ int _mbox_get(mbox_t *mbox, msg_t *msg, int blocking);
  * @param[in] mbox  ptr to mailbox to operate on
  * @param[in] msg   ptr to message that will be copied into mailbox
  */
-static inline void mbox_put(mbox_t *mbox, msg_t *msg)
+static inline void mbox_put(mbox_t *mbox atype(ptr(mbox_t)),
+                            msg_t *msg atype(ptr(msg_t)))
 {
     _mbox_put(mbox, msg, BLOCKING);
 }
@@ -120,7 +131,8 @@ static inline void mbox_put(mbox_t *mbox, msg_t *msg)
  * @return  1   if msg could be delivered
  * @return  0   otherwise
  */
-static inline int mbox_try_put(mbox_t *mbox, msg_t *msg)
+static inline int mbox_try_put(mbox_t *mbox atype(ptr(mbox_t)),
+                               msg_t *msg atype(ptr(msg_t)))
 {
     return _mbox_put(mbox, msg, NON_BLOCKING);
 }
@@ -134,7 +146,8 @@ static inline int mbox_try_put(mbox_t *mbox, msg_t *msg)
  * @param[in] mbox  ptr to mailbox to operate on
  * @param[in] msg   ptr to storage for retrieved message
  */
-static inline void mbox_get(mbox_t *mbox, msg_t *msg)
+static inline void mbox_get(mbox_t *mbox atype(ptr(mbox_t)),
+                            msg_t *msg atype(ptr(msg_t)))
 {
     _mbox_get(mbox, msg, BLOCKING);
 }
@@ -150,13 +163,18 @@ static inline void mbox_get(mbox_t *mbox, msg_t *msg)
  * @return  1   if msg could be retrieved
  * @return  0   otherwise
  */
-static inline int mbox_try_get(mbox_t *mbox, msg_t *msg)
+static inline int mbox_try_get(mbox_t *mbox atype(ptr(mbox_t)),
+                               msg_t *msg atype(ptr(msg_t)))
 {
     return _mbox_get(mbox, msg, NON_BLOCKING);
 }
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 /** @} */
