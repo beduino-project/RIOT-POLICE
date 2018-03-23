@@ -58,7 +58,7 @@ int coap_parse(coap_pkt_t *pkt atype(ptr(coap_pkt_t)),
                uint8_t *buf acount(len), size_t len)
 {
     int option_delta, option_len;
-    array_ptr(uint8_t) urlpos abounds(pkt->url, pkt->url + NANOCOAP_URL_MAX) = pkt->url;
+    nt_array_ptr(uint8_t) urlpos acount(NANOCOAP_URL_MAX - 1) = pkt->url;
     ptr(coap_hdr_t) hdr = dynamic_cast(ptr(coap_hdr_t), buf);
 
     pkt->hdr = hdr;
@@ -67,7 +67,10 @@ int coap_parse(coap_pkt_t *pkt atype(ptr(coap_pkt_t)),
     array_ptr(uint8_t) pkt_pos abounds(buf + sizeof(coap_hdr_t), pkt_end)
         = buf + sizeof(coap_hdr_t);
 
+#ifndef USE_CHECKEDC
     memset(pkt->url, '\0', NANOCOAP_URL_MAX);
+#endif
+
     pkt->payload_len = 0;
     pkt->observe_value = UINT32_MAX;
 
