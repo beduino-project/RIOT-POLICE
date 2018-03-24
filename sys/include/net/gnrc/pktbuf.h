@@ -39,6 +39,11 @@
 #include "net/gnrc/neterr.h"
 #include "net/gnrc/nettype.h"
 #include "utlist.h"
+#include "checkedc.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -84,8 +89,11 @@ void gnrc_pktbuf_init(void);
  * @return  Pointer to the packet part that represents the new gnrc_pktsnip_t.
  * @return  NULL, if no space is left in the packet buffer.
  */
-gnrc_pktsnip_t *gnrc_pktbuf_add(gnrc_pktsnip_t *next, void *data, size_t size,
-                                gnrc_nettype_t type);
+gnrc_pktsnip_t *gnrc_pktbuf_add(gnrc_pktsnip_t *next atype(ptr(gnrc_pktsnip_t)),
+                                void *data abyte_count(size),
+                                size_t size,
+                                gnrc_nettype_t type)
+    atype(ptr(gnrc_pktsnip_t));
 
 /**
  * @brief   Marks the first @p size bytes in a received packet with a new
@@ -117,7 +125,9 @@ gnrc_pktsnip_t *gnrc_pktbuf_add(gnrc_pktsnip_t *next, void *data, size_t size,
  * @return  NULL, if pkt == NULL or size == 0 or size > pkt->size or pkt->data == NULL.
  * @return  NULL, if no space is left in the packet buffer.
  */
-gnrc_pktsnip_t *gnrc_pktbuf_mark(gnrc_pktsnip_t *pkt, size_t size, gnrc_nettype_t type);
+gnrc_pktsnip_t *gnrc_pktbuf_mark(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),
+                                 size_t size, gnrc_nettype_t type)
+    atype(ptr(gnrc_pktsnip_t));
 
 /**
  * @brief   Reallocates gnrc_pktsnip_t::data of @p pkt in the packet buffer, without
@@ -138,7 +148,8 @@ gnrc_pktsnip_t *gnrc_pktbuf_mark(gnrc_pktsnip_t *pkt, size_t size, gnrc_nettype_
  * @return  0, on success
  * @return  ENOMEM, if no space is left in the packet buffer.
  */
-int gnrc_pktbuf_realloc_data(gnrc_pktsnip_t *pkt, size_t size);
+int gnrc_pktbuf_realloc_data(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),
+                             size_t size);
 
 /**
  * @brief   Increases gnrc_pktsnip_t::users of @p pkt atomically.
@@ -146,7 +157,8 @@ int gnrc_pktbuf_realloc_data(gnrc_pktsnip_t *pkt, size_t size);
  * @param[in] pkt   A packet.
  * @param[in] num   Number you want to increment gnrc_pktsnip_t::users of @p pkt by.
  */
-void gnrc_pktbuf_hold(gnrc_pktsnip_t *pkt, unsigned int num);
+void gnrc_pktbuf_hold(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),
+                      unsigned int num);
 
 /**
  * @brief   Decreases gnrc_pktsnip_t::users of @p pkt atomically and removes it if it
@@ -158,7 +170,8 @@ void gnrc_pktbuf_hold(gnrc_pktsnip_t *pkt, unsigned int num);
  * @param[in] pkt   A packet.
  * @param[in] err   An error code.
  */
-void gnrc_pktbuf_release_error(gnrc_pktsnip_t *pkt, uint32_t err);
+void gnrc_pktbuf_release_error(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),
+                               uint32_t err);
 
 /**
  * @brief   Decreases gnrc_pktsnip_t::users of @p pkt atomically and removes it if it
@@ -166,7 +179,7 @@ void gnrc_pktbuf_release_error(gnrc_pktsnip_t *pkt, uint32_t err);
  *
  * @param[in] pkt   A packet.
  */
-static inline void gnrc_pktbuf_release(gnrc_pktsnip_t *pkt)
+static inline void gnrc_pktbuf_release(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)))
 {
     gnrc_pktbuf_release_error(pkt, GNRC_NETERR_SUCCESS);
 }
@@ -185,7 +198,8 @@ static inline void gnrc_pktbuf_release(gnrc_pktsnip_t *pkt)
  * @return  NULL, if gnrc_pktsnip_t::users of @p pkt > 1 and if there is not
  *          enough space in the packet buffer.
  */
-gnrc_pktsnip_t *gnrc_pktbuf_start_write(gnrc_pktsnip_t *pkt);
+gnrc_pktsnip_t *gnrc_pktbuf_start_write(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)))
+    atype(ptr(gnrc_pktsnip_t));
 
 /**
  * @brief   Create a IOVEC representation of the packet pointed to by *pkt*
@@ -202,7 +216,9 @@ gnrc_pktsnip_t *gnrc_pktbuf_start_write(gnrc_pktsnip_t *pkt);
  * @return  Pointer to the 'IOVEC packet snip'
  * @return  NULL, if packet is empty of the packet buffer is full
  */
-gnrc_pktsnip_t *gnrc_pktbuf_get_iovec(gnrc_pktsnip_t *pkt, size_t *len);
+gnrc_pktsnip_t *gnrc_pktbuf_get_iovec(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),
+                                      size_t *len atype(ptr(size_t)))
+    atype(ptr(gnrc_pktsnip_t));
 
 /**
  * @brief   Deletes a snip from a packet and the packet buffer.
@@ -212,7 +228,9 @@ gnrc_pktsnip_t *gnrc_pktbuf_get_iovec(gnrc_pktsnip_t *pkt, size_t *len);
  *
  * @return  The new reference to @p pkt.
  */
-gnrc_pktsnip_t *gnrc_pktbuf_remove_snip(gnrc_pktsnip_t *pkt, gnrc_pktsnip_t *snip);
+gnrc_pktsnip_t *gnrc_pktbuf_remove_snip(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),
+                                        gnrc_pktsnip_t *snip atype(ptr(gnrc_pktsnip_t)))
+    atype(ptr(gnrc_pktsnip_t));
 
 /**
  * @brief   Replace a snip from a packet and the packet buffer by another snip.
@@ -223,7 +241,10 @@ gnrc_pktsnip_t *gnrc_pktbuf_remove_snip(gnrc_pktsnip_t *pkt, gnrc_pktsnip_t *sni
  *
  * @return  The new reference to @p pkt
  */
-gnrc_pktsnip_t *gnrc_pktbuf_replace_snip(gnrc_pktsnip_t *pkt, gnrc_pktsnip_t *old, gnrc_pktsnip_t *add);
+gnrc_pktsnip_t *gnrc_pktbuf_replace_snip(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),
+                                         gnrc_pktsnip_t *old atype(ptr(gnrc_pktsnip_t)),
+                                         gnrc_pktsnip_t *add atype(ptr(gnrc_pktsnip_t)))
+    atype(ptr(gnrc_pktsnip_t));
 
 /**
  * @brief Duplicates pktsnip chain upto (including) a snip with the given type
@@ -273,7 +294,9 @@ gnrc_pktsnip_t *gnrc_pktbuf_replace_snip(gnrc_pktsnip_t *pkt, gnrc_pktsnip_t *ol
  * @return The duplicated snip, if succeeded.
  * @return NULL, if no space is left in the packet buffer.
  */
-gnrc_pktsnip_t *gnrc_pktbuf_duplicate_upto(gnrc_pktsnip_t *pkt, gnrc_nettype_t type);
+gnrc_pktsnip_t *gnrc_pktbuf_duplicate_upto(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),
+                                           gnrc_nettype_t type)
+    atype(ptr(gnrc_pktsnip_t));
 
 #ifdef DEVELHELP
 /**
@@ -307,6 +330,10 @@ bool gnrc_pktbuf_is_sane(void);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_PKTBUF_H */
