@@ -25,8 +25,13 @@
 #include <inttypes.h>
 #include <stdlib.h>
 
+#include "checkedc.h"
 #include "kernel_types.h"
 #include "net/gnrc/nettype.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -106,19 +111,20 @@ extern "C" {
 /* packed to be aligned correctly in the static packet buffer */
 typedef struct gnrc_pktsnip {
     /* the first three fields *MUST* match iolist_t! */
-    struct gnrc_pktsnip *next;      /**< next snip in the packet */
-    void *data;                     /**< pointer to the data of the snip */
-    size_t size;                    /**< the length of the snip in byte */
+    struct gnrc_pktsnip *next
+        atype(ptr(struct gnrc_pktsnip)); /**< next snip in the packet */
+    void *data abyte_count(size);        /**< pointer to the data of the snip */
+    size_t size;                         /**< the length of the snip in byte */
     /**
      * @brief   Counter of threads currently having control over this packet.
      *
      * @internal
      */
     unsigned int users;
-    gnrc_nettype_t type;            /**< protocol of the packet snip */
+    gnrc_nettype_t type;                 /**< protocol of the packet snip */
 #ifdef MODULE_GNRC_NETERR
-    kernel_pid_t err_sub;           /**< subscriber to errors related to this
-                                     *   packet snip */
+    kernel_pid_t err_sub;                /**< subscriber to errors related to this
+                                          *   packet snip */
 #endif
 } gnrc_pktsnip_t;
 
@@ -129,7 +135,7 @@ typedef struct gnrc_pktsnip {
  *
  * @return  length of the list of headers.
  */
-static inline size_t gnrc_pkt_len(gnrc_pktsnip_t *pkt)
+static inline size_t gnrc_pkt_len(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)))
 {
     size_t len = 0;
 
@@ -149,7 +155,7 @@ static inline size_t gnrc_pkt_len(gnrc_pktsnip_t *pkt)
  *
  * @return  length of the list of headers.
  */
-static inline size_t gnrc_pkt_len_upto(gnrc_pktsnip_t *pkt, gnrc_nettype_t type)
+static inline size_t gnrc_pkt_len_upto(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)), gnrc_nettype_t type)
 {
     size_t len = 0;
 
@@ -173,7 +179,7 @@ static inline size_t gnrc_pkt_len_upto(gnrc_pktsnip_t *pkt, gnrc_nettype_t type)
  *
  * @return  number of snips in the given packet
  */
-static inline size_t gnrc_pkt_count(const gnrc_pktsnip_t *pkt)
+static inline size_t gnrc_pkt_count(const gnrc_pktsnip_t *pkt atype(ptr(const gnrc_pktsnip_t)))
 {
     size_t count = 0;
 
@@ -194,11 +200,16 @@ static inline size_t gnrc_pkt_count(const gnrc_pktsnip_t *pkt)
  * @return  the packet snip in @p pkt with @ref gnrc_nettype_t @p type
  * @return  NULL, if none of the snips in @p pkt is of @p type
  */
-gnrc_pktsnip_t *gnrc_pktsnip_search_type(gnrc_pktsnip_t *pkt,
-                                         gnrc_nettype_t type);
+gnrc_pktsnip_t *gnrc_pktsnip_search_type(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),
+                                         gnrc_nettype_t type)
+        atype(ptr(gnrc_pktsnip_t));
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_PKT_H */
