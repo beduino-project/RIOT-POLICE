@@ -23,12 +23,17 @@
 
 #include <inttypes.h>
 
+#include "checkedc.h"
 #include "kernel_types.h"
 #include "net/gnrc/nettype.h"
 #include "net/gnrc/pkt.h"
 
 #ifdef MODULE_GNRC_NETAPI_MBOX
 #include "mbox.h"
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
 #endif
 
 #ifdef __cplusplus
@@ -170,7 +175,7 @@ typedef struct gnrc_netreg_entry {
      *
      * @internal
      */
-    struct gnrc_netreg_entry *next;
+    struct gnrc_netreg_entry *next atype(ptr(struct gnrc_netreg_entry));
 
     /**
      * @brief   The demultiplexing context for the registering thread.
@@ -198,7 +203,7 @@ typedef struct gnrc_netreg_entry {
          *
          * @note    Only available with @ref net_gnrc_netapi_mbox.
          */
-        mbox_t *mbox;
+        mbox_t *mbox atype(ptr(mbox_t));
 #endif
 
 #if defined(MODULE_GNRC_NETAPI_CALLBACKS) || defined(DOXYGEN)
@@ -231,7 +236,7 @@ void gnrc_netreg_init(void);
  * @param[in] pid       The PID of the registering thread
  *
  */
-static inline void gnrc_netreg_entry_init_pid(gnrc_netreg_entry_t *entry,
+static inline void gnrc_netreg_entry_init_pid(gnrc_netreg_entry_t *entry atype(ptr(gnrc_netreg_entry_t)),
                                               uint32_t demux_ctx,
                                               kernel_pid_t pid)
 {
@@ -254,9 +259,9 @@ static inline void gnrc_netreg_entry_init_pid(gnrc_netreg_entry_t *entry,
  *
  * @note    Only available with @ref net_gnrc_netapi_mbox.
  */
-static inline void gnrc_netreg_entry_init_mbox(gnrc_netreg_entry_t *entry,
+static inline void gnrc_netreg_entry_init_mbox(gnrc_netreg_entry_t *entry atype(ptr(gnrc_netreg_entry_t)),
                                                uint32_t demux_ctx,
-                                               mbox_t *mbox)
+                                               mbox_t *mbox atype(ptr(mbox_t)))
 {
     entry->next = NULL;
     entry->demux_ctx = demux_ctx;
@@ -310,7 +315,8 @@ static inline void gnrc_netreg_entry_init_cb(gnrc_netreg_entry_t *entry,
  * @return  0 on success
  * @return  -EINVAL if @p type was < GNRC_NETTYPE_UNDEF or >= GNRC_NETTYPE_NUMOF
  */
-int gnrc_netreg_register(gnrc_nettype_t type, gnrc_netreg_entry_t *entry);
+int gnrc_netreg_register(gnrc_nettype_t type,
+                         gnrc_netreg_entry_t *entry atype(ptr(gnrc_netreg_entry_t)));
 
 /**
  * @brief   Removes a thread from the registry.
@@ -318,7 +324,8 @@ int gnrc_netreg_register(gnrc_nettype_t type, gnrc_netreg_entry_t *entry);
  * @param[in] type      Type of the protocol.
  * @param[in] entry     An entry you want to remove from the registry.
  */
-void gnrc_netreg_unregister(gnrc_nettype_t type, gnrc_netreg_entry_t *entry);
+void gnrc_netreg_unregister(gnrc_nettype_t type,
+                            gnrc_netreg_entry_t *entry atype(ptr(gnrc_netreg_entry_t)));
 
 /**
  * @brief   Searches for entries with given parameters in the registry and
@@ -331,7 +338,8 @@ void gnrc_netreg_unregister(gnrc_nettype_t type, gnrc_netreg_entry_t *entry);
  * @return  The first entry fitting the given parameters on success
  * @return  NULL if no entry can be found.
  */
-gnrc_netreg_entry_t *gnrc_netreg_lookup(gnrc_nettype_t type, uint32_t demux_ctx);
+gnrc_netreg_entry_t *gnrc_netreg_lookup(gnrc_nettype_t type, uint32_t demux_ctx)
+         atype(ptr(gnrc_netreg_entry_t));
 
 /**
  * @brief   Returns number of entries with the same gnrc_netreg_entry_t::type and
@@ -357,7 +365,8 @@ int gnrc_netreg_num(gnrc_nettype_t type, uint32_t demux_ctx);
  * @return  The next entry after @p entry fitting the given parameters on success
  * @return  NULL if no entry new entry can be found.
  */
-gnrc_netreg_entry_t *gnrc_netreg_getnext(gnrc_netreg_entry_t *entry);
+gnrc_netreg_entry_t *gnrc_netreg_getnext(gnrc_netreg_entry_t *entry atype(ptr(gnrc_netreg_entry_t)))
+        atype(ptr(gnrc_netreg_entry_t));
 
 /**
  * @brief   Calculates the checksum for a header.
@@ -373,10 +382,15 @@ gnrc_netreg_entry_t *gnrc_netreg_getnext(gnrc_netreg_entry_t *entry);
  *          for gnrc_pktsnip_t::type of @p hdr.
  */
 
-int gnrc_netreg_calc_csum(gnrc_pktsnip_t *hdr, gnrc_pktsnip_t *pseudo_hdr);
+int gnrc_netreg_calc_csum(gnrc_pktsnip_t *hdr atype(ptr(gnrc_pktsnip_t)),
+                          gnrc_pktsnip_t *pseudo_hdr atype(ptr(gnrc_pktsnip_t)));
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_NETREG_H */
