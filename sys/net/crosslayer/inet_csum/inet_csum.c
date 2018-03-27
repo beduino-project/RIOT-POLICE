@@ -15,12 +15,18 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include "od.h"
+#include "checkedc.h"
 #include "net/inet_csum.h"
 
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
-uint16_t inet_csum_slice(uint16_t sum, const uint8_t *buf, uint16_t len, size_t accum_len)
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
+
+uint16_t inet_csum_slice(uint16_t sum, const uint8_t *buf acount(len),
+                         uint16_t len, size_t accum_len)
 {
     uint32_t csum = sum;
 
@@ -28,7 +34,7 @@ uint16_t inet_csum_slice(uint16_t sum, const uint8_t *buf, uint16_t len, size_t 
 #if ENABLE_DEBUG
 #ifdef MODULE_OD
     DEBUG(", buf:\n");
-    od_hex_dump(buf, len, OD_WIDTH_DEFAULT);
+    unchecked { od_hex_dump(buf, len, OD_WIDTH_DEFAULT); };
 #else
     DEBUG(", buf output only with od module\n");
 #endif

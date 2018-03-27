@@ -22,6 +22,11 @@
 
 #include <inttypes.h>
 #include <stddef.h>
+#include "checkedc.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,7 +52,8 @@ extern "C" {
  *
  * @return  The unnormalized Internet Checksum of @p buf.
  */
-uint16_t inet_csum_slice(uint16_t sum, const uint8_t *buf, uint16_t len, size_t accum_len);
+uint16_t inet_csum_slice(uint16_t sum, const uint8_t *buf acount(len),
+                         uint16_t len, size_t accum_len);
 
 /**
  * @brief   Calculates the unnormalized Internet Checksum of @p buf, where the
@@ -69,12 +75,18 @@ uint16_t inet_csum_slice(uint16_t sum, const uint8_t *buf, uint16_t len, size_t 
  *
  * @return  The unnormalized Internet Checksum of @p buf.
  */
-static inline uint16_t inet_csum(uint16_t sum, const uint8_t *buf, uint16_t len) {
+static inline uint16_t inet_csum(uint16_t sum,
+                                 const uint8_t *buf acount(len),
+                                 uint16_t len) {
     return inet_csum_slice(sum, buf, len, 0);
 }
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_INET_CSUM_H */
