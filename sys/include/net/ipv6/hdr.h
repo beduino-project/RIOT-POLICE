@@ -25,6 +25,11 @@
 #include "byteorder.h"
 #include "net/inet_csum.h"
 #include "net/ipv6/addr.h"
+#include "checkedc.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -100,7 +105,8 @@ typedef struct __attribute__((packed)) {
  *
  * @param[out] hdr  Pointer to an IPv6 header.
  */
-static inline void ipv6_hdr_set_version(ipv6_hdr_t *hdr)
+static inline void ipv6_hdr_set_version(ipv6_hdr_t *hdr
+                                        atype(ptr(ipv6_hdr_t)))
 {
     hdr->v_tc_fl.u8[0] &= 0x0f;
     hdr->v_tc_fl.u8[0] |= 0x60;
@@ -113,7 +119,8 @@ static inline void ipv6_hdr_set_version(ipv6_hdr_t *hdr)
  *
  * @return  Value of the version field of @p hdr.
  */
-static inline uint8_t ipv6_hdr_get_version(const ipv6_hdr_t *hdr)
+static inline uint8_t ipv6_hdr_get_version(const ipv6_hdr_t *hdr
+                                           atype(ptr(const ipv6_hdr_t)))
 {
     return ((hdr->v_tc_fl.u8[0]) >> 4);
 }
@@ -126,7 +133,8 @@ static inline uint8_t ipv6_hdr_get_version(const ipv6_hdr_t *hdr)
  * @return  true, if version field is 6
  * @return  false, otherwise
  */
-static inline bool ipv6_hdr_is(const ipv6_hdr_t *hdr)
+static inline bool ipv6_hdr_is(const ipv6_hdr_t *hdr
+                               atype(ptr(const ipv6_hdr_t)))
 {
     return (((hdr->v_tc_fl.u8[0]) & 0xf0) == 0x60);
 }
@@ -137,7 +145,8 @@ static inline bool ipv6_hdr_is(const ipv6_hdr_t *hdr)
  * @param[out] hdr  Pointer to an IPv6 header.
  * @param[in] tc    The new value for the traffic class field.
  */
-static inline void ipv6_hdr_set_tc(ipv6_hdr_t *hdr, uint8_t tc)
+static inline void ipv6_hdr_set_tc(ipv6_hdr_t *hdr atype(ptr(ipv6_hdr_t)),
+                                   uint8_t tc)
 {
     hdr->v_tc_fl.u8[0] &= 0xf0;
     hdr->v_tc_fl.u8[0] |= (0x0f & (tc >> 4));
@@ -159,7 +168,8 @@ static inline void ipv6_hdr_set_tc(ipv6_hdr_t *hdr, uint8_t tc)
  * @param[in] ecn   The new value for the 2-bit ECN part of the traffic class
  *                  field.
  */
-static inline void ipv6_hdr_set_tc_ecn(ipv6_hdr_t *hdr, uint8_t ecn)
+static inline void ipv6_hdr_set_tc_ecn(ipv6_hdr_t *hdr atype(ptr(ipv6_hdr_t)),
+                                       uint8_t ecn)
 {
     hdr->v_tc_fl.u8[0] &= 0xf3;
     hdr->v_tc_fl.u8[0] |= (0x0c & (ecn << 2));
@@ -179,7 +189,8 @@ static inline void ipv6_hdr_set_tc_ecn(ipv6_hdr_t *hdr, uint8_t ecn)
  * @param[in] dscp  The new value for the 6-bit DSCP part of the traffic class
  *                  field.
  */
-static inline void ipv6_hdr_set_tc_dscp(ipv6_hdr_t *hdr, uint8_t dscp)
+static inline void ipv6_hdr_set_tc_dscp(ipv6_hdr_t *hdr atype(ptr(ipv6_hdr_t)),
+                                        uint8_t dscp)
 {
     hdr->v_tc_fl.u8[0] &= 0xfc;
     hdr->v_tc_fl.u8[0] |= (0x03 & (dscp >> 4));
@@ -194,7 +205,8 @@ static inline void ipv6_hdr_set_tc_dscp(ipv6_hdr_t *hdr, uint8_t dscp)
  *
  * @return  Value of the traffic class field of @p hdr.
  */
-static inline uint8_t ipv6_hdr_get_tc(const ipv6_hdr_t *hdr)
+static inline uint8_t ipv6_hdr_get_tc(const ipv6_hdr_t *hdr
+                                      atype(ptr(const ipv6_hdr_t)))
 {
     return ((((hdr->v_tc_fl.u8[0]) & 0x0f) << 4) |
             ((hdr->v_tc_fl.u8[1] & 0xf0) >> 4));
@@ -214,7 +226,8 @@ static inline uint8_t ipv6_hdr_get_tc(const ipv6_hdr_t *hdr)
  *
  * @return  Value of the ECN part of the traffic class field of @p hdr.
  */
-static inline uint8_t ipv6_hdr_get_tc_ecn(const ipv6_hdr_t *hdr)
+static inline uint8_t ipv6_hdr_get_tc_ecn(const ipv6_hdr_t *hdr
+                                          atype(ptr(const ipv6_hdr_t)))
 {
     return (((hdr->v_tc_fl.u8[0]) & 0x0c) >> 2);
 }
@@ -234,7 +247,8 @@ static inline uint8_t ipv6_hdr_get_tc_ecn(const ipv6_hdr_t *hdr)
  *
  * @return  Value of the DSCP part of the traffic class field of @p hdr.
  */
-static inline uint8_t ipv6_hdr_get_tc_dscp(const ipv6_hdr_t *hdr)
+static inline uint8_t ipv6_hdr_get_tc_dscp(const ipv6_hdr_t *hdr
+                                           atype(ptr(const ipv6_hdr_t)))
 {
     return ((((hdr->v_tc_fl.u8[0]) & 0x03) << 4) |
             ((hdr->v_tc_fl.u8[1] & 0xf0) >> 4));
@@ -246,7 +260,8 @@ static inline uint8_t ipv6_hdr_get_tc_dscp(const ipv6_hdr_t *hdr)
  * @param[out] hdr  Pointer to an IPv6 header.
  * @param[in] fl    The new value for the flow label field in host byte order.
  */
-static inline void ipv6_hdr_set_fl(ipv6_hdr_t *hdr, uint32_t fl)
+static inline void ipv6_hdr_set_fl(ipv6_hdr_t *hdr atype(ptr(ipv6_hdr_t)),
+                                   uint32_t fl)
 {
     hdr->v_tc_fl.u8[1] &= 0xf0;
     hdr->v_tc_fl.u8[1] |= (0x0f & (byteorder_htonl(fl).u8[1]));
@@ -260,7 +275,8 @@ static inline void ipv6_hdr_set_fl(ipv6_hdr_t *hdr, uint32_t fl)
  *
  * @return  Value of the flow label field of @p hdr.
  */
-static inline uint32_t ipv6_hdr_get_fl(const ipv6_hdr_t *hdr)
+static inline uint32_t ipv6_hdr_get_fl(const ipv6_hdr_t *hdr
+                                       atype(ptr(const ipv6_hdr_t)))
 {
     return byteorder_ntohl(hdr->v_tc_fl) & 0x000fffff;
 }
@@ -285,15 +301,20 @@ static inline uint32_t ipv6_hdr_get_fl(const ipv6_hdr_t *hdr)
  *
  * @return  The non-normalized Internet Checksum of the given IPv6 pseudo header.
  */
-static inline uint16_t ipv6_hdr_inet_csum(uint16_t sum, ipv6_hdr_t *hdr,
+static inline uint16_t ipv6_hdr_inet_csum(uint16_t sum, ipv6_hdr_t *hdr atype(ptr(ipv6_hdr_t)),
                                           uint8_t prot_num, uint16_t len)
-{
+unchecked {
+    /* This function is unchecked because the inet_csum invocation below
+     * intentionally overflows hdr->src.u8 in order to also run the
+     * checksum function on the destination address. This is a violation
+     * of the bound-safe interface of the inet_csum function. */
+
     if (((uint32_t)sum + len + prot_num) > 0xffff) {
         /* increment by one for overflow to keep it as 1's complement sum */
         sum++;
     }
 
-    return inet_csum(sum + len + prot_num, hdr->src.u8,
+    return inet_csum(sum + len + prot_num, (void*)hdr->src.u8,
                      (2 * sizeof(ipv6_addr_t)));
 }
 
@@ -302,10 +323,14 @@ static inline uint16_t ipv6_hdr_inet_csum(uint16_t sum, ipv6_hdr_t *hdr,
  *
  * @param[in] hdr   An IPv6 header.
  */
-void ipv6_hdr_print(ipv6_hdr_t *hdr);
+void ipv6_hdr_print(ipv6_hdr_t *hdr atype(ptr(ipv6_hdr_t)));
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_IPV6_HDR_H */
