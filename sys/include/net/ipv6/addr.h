@@ -33,6 +33,11 @@
 #include "byteorder.h"
 #include "net/ipv4/addr.h"
 
+#ifdef USE_CHECKEDC
+#include "string_checked.h"
+#pragma BOUNDS_CHECKED ON
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -72,10 +77,10 @@ extern "C" {
  * @brief Data type to represent an IPv6 address.
  */
 typedef union {
-    uint8_t u8[16];             /**< divided by 16 8-bit words. */
-    network_uint16_t u16[8];    /**< divided by 8 16-bit words. */
-    network_uint32_t u32[4];    /**< divided by 4 32-bit words. */
-    network_uint64_t u64[2];    /**< divided by 2 64-bit words. */
+    uint8_t u8 checked[16];             /**< divided by 16 8-bit words. */
+    network_uint16_t u16 checked[8];    /**< divided by 8 16-bit words. */
+    network_uint32_t u32 checked[4];    /**< divided by 4 32-bit words. */
+    network_uint64_t u64 checked[2];    /**< divided by 2 64-bit words. */
 } ipv6_addr_t;
 
 /**
@@ -319,7 +324,7 @@ extern const ipv6_addr_t ipv6_addr_solicited_node_prefix;
  * @return  true, if @p addr is unspecified address
  * @return  false, otherwise.
  */
-static inline bool ipv6_addr_is_unspecified(const ipv6_addr_t *addr)
+static inline bool ipv6_addr_is_unspecified(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)))
 {
     return (memcmp(addr, &ipv6_addr_unspecified, sizeof(ipv6_addr_t)) == 0);
 }
@@ -336,7 +341,7 @@ static inline bool ipv6_addr_is_unspecified(const ipv6_addr_t *addr)
  * @return  true, if @p addr is loopback address,
  * @return  false, otherwise.
  */
-static inline bool ipv6_addr_is_loopback(const ipv6_addr_t *addr)
+static inline bool ipv6_addr_is_loopback(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)))
 {
     return (memcmp(addr, &ipv6_addr_loopback, sizeof(ipv6_addr_t)) == 0);
 }
@@ -353,7 +358,7 @@ static inline bool ipv6_addr_is_loopback(const ipv6_addr_t *addr)
  * @return  true, if @p addr is an IPv4-compatible IPv6 address,
  * @return  false, otherwise.
  */
-static inline bool ipv6_addr_is_ipv4_compat(const ipv6_addr_t *addr)
+static inline bool ipv6_addr_is_ipv4_compat(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)))
 {
     return (memcmp(addr, &ipv6_addr_unspecified,
                    sizeof(ipv6_addr_t) - sizeof(ipv4_addr_t)) == 0);
@@ -371,7 +376,7 @@ static inline bool ipv6_addr_is_ipv4_compat(const ipv6_addr_t *addr)
  * @return  true, if @p addr is an IPv4-compatible IPv6 address,
  * @return  false, otherwise.
  */
-static inline bool ipv6_addr_is_ipv4_mapped(const ipv6_addr_t *addr)
+static inline bool ipv6_addr_is_ipv4_mapped(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)))
 {
     return ((memcmp(addr, &ipv6_addr_unspecified,
                     sizeof(ipv6_addr_t) - sizeof(ipv4_addr_t) - 2) == 0) &&
@@ -390,7 +395,7 @@ static inline bool ipv6_addr_is_ipv4_mapped(const ipv6_addr_t *addr)
  * @return  true, if @p addr is multicast address,
  * @return  false, otherwise.
  */
-static inline bool ipv6_addr_is_multicast(const ipv6_addr_t *addr)
+static inline bool ipv6_addr_is_multicast(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)))
 {
     return (addr->u8[0] == 0xff);
 }
@@ -410,7 +415,7 @@ static inline bool ipv6_addr_is_multicast(const ipv6_addr_t *addr)
  * @return  true, if @p addr is link-local address,
  * @return  false, otherwise.
  */
-static inline bool ipv6_addr_is_link_local(const ipv6_addr_t *addr)
+static inline bool ipv6_addr_is_link_local(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)))
 {
     return (memcmp(addr, &ipv6_addr_link_local_prefix, sizeof(addr->u64[0])) == 0) ||
            (ipv6_addr_is_multicast(addr) &&
@@ -433,7 +438,7 @@ static inline bool ipv6_addr_is_link_local(const ipv6_addr_t *addr)
  * @return  true, if @p addr is a site-local unicast address,
  * @return  false, otherwise.
  */
-static inline bool ipv6_addr_is_site_local(const ipv6_addr_t *addr)
+static inline bool ipv6_addr_is_site_local(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)))
 {
     return (((byteorder_ntohs(addr->u16[0]) & 0xffc0) ==
              IPV6_ADDR_SITE_LOCAL_PREFIX) ||
@@ -453,7 +458,7 @@ static inline bool ipv6_addr_is_site_local(const ipv6_addr_t *addr)
  * @return  true, if @p addr is unique local unicast address,
  * @return  false, otherwise.
  */
-static inline bool ipv6_addr_is_unique_local_unicast(const ipv6_addr_t *addr)
+static inline bool ipv6_addr_is_unique_local_unicast(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)))
 {
     return ((addr->u8[0] == 0xfc) || (addr->u8[0] == 0xfd));
 }
@@ -470,7 +475,7 @@ static inline bool ipv6_addr_is_unique_local_unicast(const ipv6_addr_t *addr)
  * @return  true, if @p addr is global unicast address,
  * @return  false, otherwise.
  */
-static inline bool ipv6_addr_is_global(const ipv6_addr_t *addr)
+static inline bool ipv6_addr_is_global(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)))
 {
     /* first check for multicast with global scope */
     if (ipv6_addr_is_multicast(addr)) {
@@ -496,7 +501,7 @@ static inline bool ipv6_addr_is_global(const ipv6_addr_t *addr)
  * @return  true, if @p addr is solicited-node multicast address,
  * @return  false, otherwise.
  */
-static inline bool ipv6_addr_is_solicited_node(const ipv6_addr_t *addr)
+static inline bool ipv6_addr_is_solicited_node(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)))
 {
     return (memcmp(addr, &ipv6_addr_solicited_node_prefix,
                    sizeof(ipv6_addr_t) - 3) == 0);
@@ -512,7 +517,8 @@ static inline bool ipv6_addr_is_solicited_node(const ipv6_addr_t *addr)
  * @return  true, if @p a and @p b are equal
  * @return  false, otherwise.
  */
-bool ipv6_addr_equal(const ipv6_addr_t *a, const ipv6_addr_t *b);
+bool ipv6_addr_equal(const ipv6_addr_t *a atype(ptr(const ipv6_addr_t)),
+                     const ipv6_addr_t *b atype(ptr(const ipv6_addr_t)));
 
 /**
  * @brief   Checks up to which bit-count two IPv6 addresses match in their
@@ -523,7 +529,8 @@ bool ipv6_addr_equal(const ipv6_addr_t *a, const ipv6_addr_t *b);
  *
  * @return  The number of bits @p a and @p b match in their prefix
  */
-uint8_t ipv6_addr_match_prefix(const ipv6_addr_t *a, const ipv6_addr_t *b);
+uint8_t ipv6_addr_match_prefix(const ipv6_addr_t *a atype(ptr(const ipv6_addr_t)),
+                               const ipv6_addr_t *b atype(ptr(const ipv6_addr_t)));
 
 /**
  * @brief   Sets IPv6 address @p out with the first @p bits taken
@@ -534,7 +541,9 @@ uint8_t ipv6_addr_match_prefix(const ipv6_addr_t *a, const ipv6_addr_t *b);
  * @param[in]   bits    Bits to be copied from @p prefix to @p out
  *                      (set to 128 when greater than 128).
  */
-void ipv6_addr_init_prefix(ipv6_addr_t *out, const ipv6_addr_t *prefix, uint8_t bits);
+void ipv6_addr_init_prefix(ipv6_addr_t *out atype(ptr(ipv6_addr_t)),
+                           const ipv6_addr_t *prefix atype(ptr(const ipv6_addr_t)),
+                           uint8_t bits);
 
 /**
  * @brief   Sets the last @p bits of IPv6 address @p out to @p iid.
@@ -545,7 +554,9 @@ void ipv6_addr_init_prefix(ipv6_addr_t *out, const ipv6_addr_t *prefix, uint8_t 
  * @param[in]   bits    Bits to be copied from @p iid to @p out
  *                      (set to 128 when greater than 128).
  */
-void ipv6_addr_init_iid(ipv6_addr_t *out, const uint8_t *iid, uint8_t bits);
+void ipv6_addr_init_iid(ipv6_addr_t *out atype(ptr(ipv6_addr_t)),
+                        const uint8_t *iid atype(ptr(const uint8_t)),
+                        uint8_t bits);
 
 /**
  * @brief   Sets @p addr dynamically to the unspecified IPv6 address (::).
@@ -556,7 +567,7 @@ void ipv6_addr_init_iid(ipv6_addr_t *out, const uint8_t *iid, uint8_t bits);
  *
  * @param[in,out] addr  The address to set.
  */
-static inline void ipv6_addr_set_unspecified(ipv6_addr_t *addr)
+static inline void ipv6_addr_set_unspecified(ipv6_addr_t *addr atype(ptr(ipv6_addr_t)))
 {
     memset(addr, 0, sizeof(ipv6_addr_t));
 }
@@ -570,7 +581,7 @@ static inline void ipv6_addr_set_unspecified(ipv6_addr_t *addr)
  *
  * @param[in,out] addr  The address to set.
  */
-static inline void ipv6_addr_set_loopback(ipv6_addr_t *addr)
+static inline void ipv6_addr_set_loopback(ipv6_addr_t *addr atype(ptr(ipv6_addr_t)))
 {
     memset(addr, 0, sizeof(ipv6_addr_t));
     addr->u8[15] = 1;
@@ -585,7 +596,7 @@ static inline void ipv6_addr_set_loopback(ipv6_addr_t *addr)
  *
  * @param[in,out] addr  The address to set.
  */
-static inline void ipv6_addr_set_link_local_prefix(ipv6_addr_t *addr)
+static inline void ipv6_addr_set_link_local_prefix(ipv6_addr_t *addr atype(ptr(ipv6_addr_t)))
 {
     memcpy(addr, &ipv6_addr_link_local_prefix, sizeof(addr->u64[0]));
 }
@@ -601,7 +612,8 @@ static inline void ipv6_addr_set_link_local_prefix(ipv6_addr_t *addr)
  * @param[in,out] addr  The address to set.
  * @param[in] iid       The interface ID as integer to set.
  */
-static inline void ipv6_addr_set_iid(ipv6_addr_t *addr, uint64_t iid)
+static inline void ipv6_addr_set_iid(ipv6_addr_t *addr atype(ptr(ipv6_addr_t)),
+                                     uint64_t iid)
 {
     addr->u64[1] = byteorder_htonll(iid);
 }
@@ -617,8 +629,12 @@ static inline void ipv6_addr_set_iid(ipv6_addr_t *addr, uint64_t iid)
  * @param[in,out] addr  The address to set.
  * @param[in] iid       The interface ID as array of at least length 8 to set.
  */
-static inline void ipv6_addr_set_aiid(ipv6_addr_t *addr, uint8_t *iid)
-{
+static inline void ipv6_addr_set_aiid(ipv6_addr_t *addr atype(ptr(ipv6_addr_t)),
+                                      uint8_t *iid atype(array_ptr(uint8_t)))
+unchecked {
+    /* This function is unchecked because it makes assumption about the
+     * size of the memory segement iid points to. This cannot be fixed
+     * without changing the API of this function. */
     memcpy(&addr->u64[1], iid, sizeof(addr->u64[1]));
 }
 
@@ -633,7 +649,8 @@ static inline void ipv6_addr_set_aiid(ipv6_addr_t *addr, uint8_t *iid)
  * @param[in] flags     The multicast address' flags.
  * @param[in] scope     The multicast address' scope.
  */
-static inline void ipv6_addr_set_multicast(ipv6_addr_t *addr, unsigned int flags,
+static inline void ipv6_addr_set_multicast(ipv6_addr_t *addr atype(ptr(ipv6_addr_t)),
+                                           unsigned int flags,
                                            unsigned int scope)
 {
     addr->u8[0] = 0xff;
@@ -651,7 +668,8 @@ static inline void ipv6_addr_set_multicast(ipv6_addr_t *addr, unsigned int flags
  * @param[in,out] addr  The address to set.
  * @param[in] scope     The multicast address' scope.
  */
-static inline void ipv6_addr_set_all_nodes_multicast(ipv6_addr_t *addr, unsigned int scope)
+static inline void ipv6_addr_set_all_nodes_multicast(ipv6_addr_t *addr atype(ptr(ipv6_addr_t)),
+                                                     unsigned int scope)
 {
     memcpy(addr, &ipv6_addr_all_nodes_if_local, sizeof(ipv6_addr_t));
     addr->u8[1] = (uint8_t)scope;
@@ -668,7 +686,8 @@ static inline void ipv6_addr_set_all_nodes_multicast(ipv6_addr_t *addr, unsigned
  * @param[in,out] addr  The address to set.
  * @param[in] scope     The multicast address' scope.
  */
-static inline void ipv6_addr_set_all_routers_multicast(ipv6_addr_t *addr, unsigned int scope)
+static inline void ipv6_addr_set_all_routers_multicast(ipv6_addr_t *addr atype(ptr(ipv6_addr_t)),
+                                                       unsigned int scope)
 {
     memcpy(addr, &ipv6_addr_all_routers_if_local, sizeof(ipv6_addr_t));
     addr->u8[1] = (uint8_t)scope;
@@ -685,7 +704,8 @@ static inline void ipv6_addr_set_all_routers_multicast(ipv6_addr_t *addr, unsign
  * @param[out]  out   Is set to solicited-node address of this node.
  * @param[in]   in    The IPv6 address the solicited-node address.
  */
-static inline void ipv6_addr_set_solicited_nodes(ipv6_addr_t *out, const ipv6_addr_t *in)
+static inline void ipv6_addr_set_solicited_nodes(ipv6_addr_t *out atype(ptr(ipv6_addr_t)),
+                                                 const ipv6_addr_t *in atype(ptr(const ipv6_addr_t)))
 {
     out->u64[0] = byteorder_htonll(0xff02000000000000);
     out->u32[2] = byteorder_htonl(1);
@@ -710,7 +730,10 @@ static inline void ipv6_addr_set_solicited_nodes(ipv6_addr_t *out, const ipv6_ad
  * @return  NULL, if @p result_len was lesser than IPV6_ADDR_MAX_STR_LEN
  * @return  NULL, if @p result or @p addr was NULL
  */
-char *ipv6_addr_to_str(char *result, const ipv6_addr_t *addr, uint8_t result_len);
+char *ipv6_addr_to_str(char *result acount(result_len),
+                       const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)),
+                       uint8_t result_len)
+    acount(result_len);
 
 /**
  * @brief   Converts an IPv6 address string representation to a byte-represented
@@ -727,7 +750,9 @@ char *ipv6_addr_to_str(char *result, const ipv6_addr_t *addr, uint8_t result_len
  * @return  NULL, if @p addr was malformed
  * @return  NULL, if @p result or @p addr was NULL
  */
-ipv6_addr_t *ipv6_addr_from_str(ipv6_addr_t *result, const char *addr);
+ipv6_addr_t *ipv6_addr_from_str(ipv6_addr_t *result atype(ptr(ipv6_addr_t)),
+                                const char *addr atype(nt_array_ptr(const char)))
+    atype(ptr(ipv6_addr_t));
 
 /**
  * @brief split IPv6 address string representation
@@ -741,7 +766,8 @@ ipv6_addr_t *ipv6_addr_from_str(ipv6_addr_t *result, const char *addr);
  * @return      atoi(string after split)
  * @return      @p _default if no string after @p seperator
  */
-int ipv6_addr_split(char *addr_str, char seperator, int _default);
+int ipv6_addr_split(char *addr_str atype(nt_array_ptr(char)),
+                    char seperator, int _default);
 
 /**
  * @brief split IPv6 prefix string representation
@@ -751,7 +777,7 @@ int ipv6_addr_split(char *addr_str, char seperator, int _default);
  * @param[in,out]   addr_str    Address to split
  * @return          prefix length or 128 if none specified
  */
-static inline int ipv6_addr_split_prefix(char *addr_str)
+static inline int ipv6_addr_split_prefix(char *addr_str atype(nt_array_ptr(char)))
 {
     return ipv6_addr_split(addr_str, '/', 128);
 }
@@ -764,7 +790,7 @@ static inline int ipv6_addr_split_prefix(char *addr_str)
  * @param[in,out]   addr_str Address to split
  * @return          interface number or -1 if none specified
  */
-static inline int ipv6_addr_split_iface(char *addr_str)
+static inline int ipv6_addr_split_iface(char *addr_str atype(nt_array_ptr(char)))
 {
     return ipv6_addr_split(addr_str, '%', -1);
 }
@@ -774,10 +800,14 @@ static inline int ipv6_addr_split_iface(char *addr_str)
  *
  * @param[in]   addr  Pointer to ipv6_addr_t to print
  */
-void ipv6_addr_print(const ipv6_addr_t *addr);
+void ipv6_addr_print(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)));
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_IPV6_ADDR_H */
