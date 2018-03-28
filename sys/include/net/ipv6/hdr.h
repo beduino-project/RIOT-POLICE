@@ -263,9 +263,10 @@ static inline uint8_t ipv6_hdr_get_tc_dscp(const ipv6_hdr_t *hdr
 static inline void ipv6_hdr_set_fl(ipv6_hdr_t *hdr atype(ptr(ipv6_hdr_t)),
                                    uint32_t fl)
 {
+    network_uint32_t n = byteorder_htonl(fl);
     hdr->v_tc_fl.u8[1] &= 0xf0;
-    hdr->v_tc_fl.u8[1] |= (0x0f & (byteorder_htonl(fl).u8[1]));
-    hdr->v_tc_fl.u16[1] = byteorder_htonl(fl).u16[1];
+    hdr->v_tc_fl.u8[1] |= (0x0f & (n.u8[1]));
+    hdr->v_tc_fl.u16[1] = n.u16[1];
 }
 
 /**
