@@ -34,15 +34,19 @@
 
 #include "net/gnrc/ipv6.h"
 
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
+
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
 #define _MAX_L2_ADDR_LEN    (8U)
 
 #if ENABLE_DEBUG
-static char _stack[GNRC_IPV6_STACK_SIZE + THREAD_EXTRA_STACKSIZE_PRINTF];
+static char _stack checked[GNRC_IPV6_STACK_SIZE + THREAD_EXTRA_STACKSIZE_PRINTF];
 #else
-static char _stack[GNRC_IPV6_STACK_SIZE];
+static char _stack checked[GNRC_IPV6_STACK_SIZE];
 #endif
 
 #ifdef MODULE_FIB
@@ -51,7 +55,7 @@ static char _stack[GNRC_IPV6_STACK_SIZE];
 /**
  * @brief buffer to store the entries in the IPv6 forwarding table
  */
-static fib_entry_t _fib_entries[GNRC_IPV6_FIB_TABLE_SIZE];
+static fib_entry_t _fib_entries checked[GNRC_IPV6_FIB_TABLE_SIZE];
 
 /**
  * @brief the IPv6 forwarding table
@@ -59,21 +63,22 @@ static fib_entry_t _fib_entries[GNRC_IPV6_FIB_TABLE_SIZE];
 fib_table_t gnrc_ipv6_fib_table;
 #endif
 
-static char addr_str[IPV6_ADDR_MAX_STR_LEN];
+static char addr_str checked[IPV6_ADDR_MAX_STR_LEN];
 
 kernel_pid_t gnrc_ipv6_pid = KERNEL_PID_UNDEF;
 
 /* handles GNRC_NETAPI_MSG_TYPE_RCV commands */
-static void _receive(gnrc_pktsnip_t *pkt);
+static void _receive(ptr(gnrc_pktsnip_t) pkt);
 /* Sends packet over the appropriate interface(s).
  * prep_hdr: prepare header for sending (call to _fill_ipv6_hdr()), otherwise
  * assume it is already prepared */
-static void _send(gnrc_pktsnip_t *pkt, bool prep_hdr);
+static void _send(ptr(gnrc_pktsnip_t) pkt, bool prep_hdr);
 /* Main event loop for IPv6 */
-static void *_event_loop(void *args);
+static void *_event_loop(void *args atype(ptr(void)))
+    atype(ptr(void));
 
 /* Handles encapsulated IPv6 packets: http://tools.ietf.org/html/rfc2473 */
-static void _decapsulate(gnrc_pktsnip_t *pkt);
+static void _decapsulate(ptr(gnrc_pktsnip_t) pkt);
 
 kernel_pid_t gnrc_ipv6_init(void)
 {
@@ -93,7 +98,7 @@ kernel_pid_t gnrc_ipv6_init(void)
     return gnrc_ipv6_pid;
 }
 
-static void _dispatch_next_header(gnrc_pktsnip_t *current, gnrc_pktsnip_t *pkt,
+static void _dispatch_next_header(ptr(gnrc_pktsnip_t) current, ptr(gnrc_pktsnip_t) pkt,
                                   uint8_t nh, bool interested);
 
 /*
@@ -102,8 +107,10 @@ static void _dispatch_next_header(gnrc_pktsnip_t *current, gnrc_pktsnip_t *pkt,
  *         v                       v
  * IPv6 <- IPv6_EXT <- IPv6_EXT <- UNDEF
  */
-void gnrc_ipv6_demux(gnrc_netif_t *netif, gnrc_pktsnip_t *current,
-                     gnrc_pktsnip_t *pkt, uint8_t nh)
+void gnrc_ipv6_demux(gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+                     gnrc_pktsnip_t *current atype(ptr(gnrc_pktsnip_t)),
+                     gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),
+                     uint8_t nh)
 {
     bool interested = false;
 
@@ -193,19 +200,20 @@ void gnrc_ipv6_demux(gnrc_netif_t *netif, gnrc_pktsnip_t *current,
     assert(false);
 }
 
-ipv6_hdr_t *gnrc_ipv6_get_header(gnrc_pktsnip_t *pkt)
+ipv6_hdr_t *gnrc_ipv6_get_header(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)))
+    atype(ptr(ipv6_hdr_t))
 {
-    ipv6_hdr_t *hdr = NULL;
-    gnrc_pktsnip_t *tmp = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_IPV6);
+    ptr(ipv6_hdr_t) hdr = NULL;
+    ptr(gnrc_pktsnip_t) tmp = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_IPV6);
     if ((tmp != NULL) && (tmp->data != NULL) && ipv6_hdr_is(tmp->data)) {
-        hdr = ((ipv6_hdr_t*) tmp->data);
+        hdr = ((ptr(ipv6_hdr_t)) tmp->data);
     }
 
     return hdr;
 }
 
 /* internal functions */
-static void _dispatch_next_header(gnrc_pktsnip_t *current, gnrc_pktsnip_t *pkt,
+static void _dispatch_next_header(ptr(gnrc_pktsnip_t) current, ptr(gnrc_pktsnip_t) pkt,
                                   uint8_t nh, bool interested)
 {
 #ifdef MODULE_GNRC_IPV6_EXT
@@ -245,9 +253,10 @@ static void _dispatch_next_header(gnrc_pktsnip_t *current, gnrc_pktsnip_t *pkt,
     }
 }
 
-static void *_event_loop(void *args)
-{
-    msg_t msg, reply, msg_q[GNRC_IPV6_MSG_QUEUE_SIZE];
+static void *_event_loop(void *args atype(ptr(void)))
+    atype(ptr(void))
+unchecked {
+    msg_t msg, reply, msg_q checked[GNRC_IPV6_MSG_QUEUE_SIZE];
     gnrc_netreg_entry_t me_reg = GNRC_NETREG_ENTRY_INIT_PID(GNRC_NETREG_DEMUX_CTX_ALL,
                                                             sched_active_pid);
 
@@ -268,12 +277,12 @@ static void *_event_loop(void *args)
         switch (msg.type) {
             case GNRC_NETAPI_MSG_TYPE_RCV:
                 DEBUG("ipv6: GNRC_NETAPI_MSG_TYPE_RCV received\n");
-                _receive(msg.content.ptr);
+                _receive(assume_cast(ptr(gnrc_pktsnip_t), msg.content.ptr));
                 break;
 
             case GNRC_NETAPI_MSG_TYPE_SND:
                 DEBUG("ipv6: GNRC_NETAPI_MSG_TYPE_SND received\n");
-                _send(msg.content.ptr, true);
+                _send(assume_cast(ptr(gnrc_pktsnip_t), msg.content.ptr), true);
                 break;
 
             case GNRC_NETAPI_MSG_TYPE_GET:
@@ -309,10 +318,10 @@ static void *_event_loop(void *args)
     return NULL;
 }
 
-static void _send_to_iface(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
+static void _send_to_iface(ptr(gnrc_netif_t) netif, ptr(gnrc_pktsnip_t) pkt)
 {
     assert(netif != NULL);
-    ((gnrc_netif_hdr_t *)pkt->data)->if_pid = netif->pid;
+    ((ptr(gnrc_netif_hdr_t))pkt->data)->if_pid = netif->pid;
     if (gnrc_pkt_len(pkt->next) > netif->ipv6.mtu) {
         DEBUG("ipv6: packet too big\n");
         gnrc_pktbuf_release(pkt);
@@ -339,11 +348,11 @@ static void _send_to_iface(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
     }
 }
 
-static gnrc_pktsnip_t *_create_netif_hdr(uint8_t *dst_l2addr,
+static ptr(gnrc_pktsnip_t) _create_netif_hdr(ptr(uint8_t) dst_l2addr,
                                          uint16_t dst_l2addr_len,
-                                         gnrc_pktsnip_t *pkt)
+                                         ptr(gnrc_pktsnip_t) pkt)
 {
-    gnrc_pktsnip_t *netif_hdr = gnrc_netif_hdr_build(NULL, 0, dst_l2addr, dst_l2addr_len);
+    ptr(gnrc_pktsnip_t) netif_hdr = gnrc_netif_hdr_build(NULL, 0, dst_l2addr, dst_l2addr_len);
 
     if (netif_hdr == NULL) {
         DEBUG("ipv6: error on interface header allocation, dropping packet\n");
@@ -359,7 +368,8 @@ static gnrc_pktsnip_t *_create_netif_hdr(uint8_t *dst_l2addr,
          * copied using netif parameter, so we only need to copy the flags
          * (minus the broadcast/multicast flags) */
         DEBUG("ipv6: copy old interface header flags\n");
-        gnrc_netif_hdr_t *netif_new = netif_hdr->data, *netif_old = pkt->data;
+        ptr(gnrc_netif_hdr_t) netif_new = netif_hdr->data;
+        ptr(gnrc_netif_hdr_t) netif_old = pkt->data;
         netif_new->flags = netif_old->flags & \
                            ~(GNRC_NETIF_HDR_FLAGS_BROADCAST | GNRC_NETIF_HDR_FLAGS_MULTICAST);
         DEBUG("ipv6: removed old interface header\n");
@@ -373,8 +383,10 @@ static gnrc_pktsnip_t *_create_netif_hdr(uint8_t *dst_l2addr,
 }
 
 /* functions for sending */
-static void _send_unicast(gnrc_netif_t *netif, uint8_t *dst_l2addr,
-                          uint16_t dst_l2addr_len, gnrc_pktsnip_t *pkt)
+static void _send_unicast(ptr(gnrc_netif_t) netif,
+                          ptr(uint8_t) dst_l2addr,
+                          uint16_t dst_l2addr_len,
+                          ptr(gnrc_pktsnip_t) pkt)
 {
     DEBUG("ipv6: add interface header to packet\n");
     if ((pkt = _create_netif_hdr(dst_l2addr, dst_l2addr_len, pkt)) == NULL) {
@@ -388,11 +400,12 @@ static void _send_unicast(gnrc_netif_t *netif, uint8_t *dst_l2addr,
     _send_to_iface(netif, pkt);
 }
 
-static int _fill_ipv6_hdr(gnrc_netif_t *netif, gnrc_pktsnip_t *ipv6,
-                          gnrc_pktsnip_t *payload)
+static int _fill_ipv6_hdr(ptr(gnrc_netif_t) netif,
+                          ptr(gnrc_pktsnip_t) ipv6,
+                          ptr(gnrc_pktsnip_t) payload)
 {
     int res;
-    ipv6_hdr_t *hdr = ipv6->data;
+    ptr(ipv6_hdr_t) hdr = ipv6->data;
 
     hdr->len = byteorder_htons(gnrc_pkt_len(payload));
     DEBUG("ipv6: set payload length to %u (network byteorder %04" PRIx16 ")\n",
@@ -424,8 +437,8 @@ static int _fill_ipv6_hdr(gnrc_netif_t *netif, gnrc_pktsnip_t *ipv6,
             ipv6_addr_set_loopback(&hdr->src);
         }
         else {
-            ipv6_addr_t *src = gnrc_netif_ipv6_addr_best_src(netif, &hdr->dst,
-                                                             false);
+            ptr(ipv6_addr_t) src = gnrc_netif_ipv6_addr_best_src(netif, &hdr->dst,
+                                                                 false);
 
             if (src != NULL) {
                 DEBUG("ipv6: set packet source to %s\n",
@@ -448,12 +461,12 @@ static int _fill_ipv6_hdr(gnrc_netif_t *netif, gnrc_pktsnip_t *ipv6,
     return 0;
 }
 
-static inline void _send_multicast_over_iface(gnrc_netif_t *netif,
-                                              gnrc_pktsnip_t *pkt)
+static inline void _send_multicast_over_iface(ptr(gnrc_netif_t) netif,
+                                              ptr(gnrc_pktsnip_t) pkt)
 {
     DEBUG("ipv6: send multicast over interface %" PRIkernel_pid "\n", netif->pid);
     /* mark as multicast */
-    ((gnrc_netif_hdr_t *)pkt->data)->flags |= GNRC_NETIF_HDR_FLAGS_MULTICAST;
+    ((ptr(gnrc_netif_hdr_t))pkt->data)->flags |= GNRC_NETIF_HDR_FLAGS_MULTICAST;
 #ifdef MODULE_NETSTATS_IPV6
     netif->ipv6.stats.tx_mcast_count++;
 #endif
@@ -461,8 +474,10 @@ static inline void _send_multicast_over_iface(gnrc_netif_t *netif,
     _send_to_iface(netif, pkt);
 }
 
-static void _send_multicast(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt,
-                            gnrc_pktsnip_t *ipv6, gnrc_pktsnip_t *payload,
+static void _send_multicast(ptr(gnrc_netif_t) netif,
+                            ptr(gnrc_pktsnip_t) pkt,
+                            ptr(gnrc_pktsnip_t) ipv6,
+                            ptr(gnrc_pktsnip_t) payload,
                             bool prep_hdr)
 {
     size_t ifnum = 0;
@@ -488,8 +503,8 @@ static void _send_multicast(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt,
             if (prep_hdr) {
                 /* need to get second write access (duplication) to fill IPv6
                  * header interface-local */
-                gnrc_pktsnip_t *tmp = gnrc_pktbuf_start_write(pkt);
-                gnrc_pktsnip_t *ptr = tmp->next;
+                ptr(gnrc_pktsnip_t) tmp = gnrc_pktbuf_start_write(pkt);
+                ptr(gnrc_pktsnip_t) ptr = tmp->next;
                 ipv6 = tmp;
 
                 if (ipv6 == NULL) {
@@ -561,16 +576,15 @@ static void _send_multicast(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt,
 #endif  /* GNRC_NETIF_NUMOF */
 }
 
-static void _send(gnrc_pktsnip_t *pkt, bool prep_hdr)
+static void _send(ptr(gnrc_pktsnip_t) pkt, bool prep_hdr)
 {
-    gnrc_netif_t *netif = NULL;
-    gnrc_pktsnip_t *ipv6, *payload;
-    ipv6_hdr_t *hdr;
+    ptr(gnrc_netif_t) netif = NULL;
+    ptr(gnrc_pktsnip_t) ipv6 = NULL;
     /* get IPv6 snip and (if present) generic interface header */
     if (pkt->type == GNRC_NETTYPE_NETIF) {
         /* If there is already a netif header (routing protocols and
          * neighbor discovery might add them to preset sending interface) */
-        netif = gnrc_netif_get_by_pid(((gnrc_netif_hdr_t *)pkt->data)->if_pid);
+        netif = gnrc_netif_get_by_pid(((ptr(gnrc_netif_hdr_t))pkt->data)->if_pid);
         /* seize payload as temporary variable */
         ipv6 = gnrc_pktbuf_start_write(pkt); /* write protect for later removal
                                               * in _send_unicast() */
@@ -587,7 +601,7 @@ static void _send(gnrc_pktsnip_t *pkt, bool prep_hdr)
         ipv6 = pkt;
     }
     /* seize payload as temporary variable */
-    payload = gnrc_pktbuf_start_write(ipv6);
+    ptr(gnrc_pktsnip_t) payload = gnrc_pktbuf_start_write(ipv6);
     if (payload == NULL) {
         DEBUG("ipv6: unable to get write access to IPv6 header, dropping packet\n");
         gnrc_pktbuf_release(pkt);
@@ -601,20 +615,19 @@ static void _send(gnrc_pktsnip_t *pkt, bool prep_hdr)
     }
     ipv6 = payload;  /* Reset ipv6 from temporary variable */
 
-    hdr = ipv6->data;
+    ptr(ipv6_hdr_t) hdr = ipv6->data;
     payload = ipv6->next;
 
     if (ipv6_addr_is_multicast(&hdr->dst)) {
         _send_multicast(netif, pkt, ipv6, payload, prep_hdr);
     }
     else {
-        gnrc_netif_t *tmp_netif = gnrc_netif_get_by_ipv6_addr(&hdr->dst);
+        ptr(gnrc_netif_t) tmp_netif = gnrc_netif_get_by_ipv6_addr(&hdr->dst);
 
         if (ipv6_addr_is_loopback(&hdr->dst) ||    /* dst is loopback address */
                 /* or dst registered to a local interface */
                 (tmp_netif != NULL)) {
-            uint8_t *rcv_data;
-            gnrc_pktsnip_t *ptr = ipv6, *rcv_pkt;
+            ptr(gnrc_pktsnip_t) ptr = ipv6;
 
             if (prep_hdr) {
                 if (_fill_ipv6_hdr(tmp_netif, ipv6, payload) < 0) {
@@ -624,8 +637,10 @@ static void _send(gnrc_pktsnip_t *pkt, bool prep_hdr)
                 }
             }
 
-            rcv_pkt = gnrc_pktbuf_add(NULL, NULL, gnrc_pkt_len(ipv6),
-                                      GNRC_NETTYPE_IPV6);
+            size_t rcv_pkt_len = gnrc_pkt_len(ipv6);
+            ptr(gnrc_pktsnip_t) rcv_pkt = gnrc_pktbuf_add(NULL, NULL,
+                                                          rcv_pkt_len,
+                                                          GNRC_NETTYPE_IPV6);
 
             if (rcv_pkt == NULL) {
                 DEBUG("ipv6: error on generating loopback packet\n");
@@ -633,7 +648,7 @@ static void _send(gnrc_pktsnip_t *pkt, bool prep_hdr)
                 return;
             }
 
-            rcv_data = rcv_pkt->data;
+            array_ptr(uint8_t) rcv_data acount(rcv_pkt->size) = rcv_pkt->data;
 
             /* "reverse" packet (by making it one snip as if received from NIC) */
             while (ptr != NULL) {
@@ -676,7 +691,8 @@ static void _send(gnrc_pktsnip_t *pkt, bool prep_hdr)
 }
 
 /* functions for receiving */
-static inline bool _pkt_not_for_me(gnrc_netif_t **netif, ipv6_hdr_t *hdr)
+static inline bool _pkt_not_for_me(ptr(ptr(gnrc_netif_t)) netif,
+                                   ptr(ipv6_hdr_t) hdr)
 {
     if (ipv6_addr_is_loopback(&hdr->dst)) {
         return false;
@@ -691,28 +707,27 @@ static inline bool _pkt_not_for_me(gnrc_netif_t **netif, ipv6_hdr_t *hdr)
     }
 }
 
-static void _receive(gnrc_pktsnip_t *pkt)
+static void _receive(ptr(gnrc_pktsnip_t) pkt)
 {
-    gnrc_netif_t *netif = NULL;
-    gnrc_pktsnip_t *ipv6, *netif_hdr, *first_ext;
-    ipv6_hdr_t *hdr;
+    ptr(gnrc_netif_t) netif = NULL;
 
     assert(pkt != NULL);
 
-    netif_hdr = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
+    ptr(gnrc_pktsnip_t) netif_hdr = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
 
     if (netif_hdr != NULL) {
-        netif = gnrc_netif_get_by_pid(((gnrc_netif_hdr_t *)netif_hdr->data)->if_pid);
+        netif = gnrc_netif_get_by_pid(((ptr(gnrc_netif_hdr_t))netif_hdr->data)->if_pid);
 #ifdef MODULE_NETSTATS_IPV6
         assert(netif != NULL);
-        netstats_t *stats = &netif->ipv6.stats;
+        ptr(netstats_t) stats = &netif->ipv6.stats;
         stats->rx_count++;
         stats->rx_bytes += (gnrc_pkt_len(pkt) - netif_hdr->size);
 #endif
     }
 
-    first_ext = pkt;
+    ptr(gnrc_pktsnip_t) first_ext = pkt;
 
+    ptr(gnrc_pktsnip_t) ipv6 = pkt;
     for (ipv6 = pkt; ipv6 != NULL; ipv6 = ipv6->next) { /* find IPv6 header if already marked */
         if ((ipv6->type == GNRC_NETTYPE_IPV6) && (ipv6->size == sizeof(ipv6_hdr_t)) &&
             (ipv6->data != NULL) && (ipv6_hdr_is(ipv6->data))) {
@@ -729,14 +744,14 @@ static void _receive(gnrc_pktsnip_t *pkt)
             return;
         }
 #ifdef MODULE_GNRC_IPV6_WHITELIST
-        if (!gnrc_ipv6_whitelisted(&((ipv6_hdr_t *)(pkt->data))->src)) {
+        if (!gnrc_ipv6_whitelisted(&(dynamic_cast(ptr(ipv6_hdr_t), pkt->data))->src)) {
             DEBUG("ipv6: Source address not whitelisted, dropping packet\n");
             gnrc_pktbuf_release(pkt);
             return;
         }
 #endif
 #ifdef MODULE_GNRC_IPV6_BLACKLIST
-        if (gnrc_ipv6_blacklisted(&((ipv6_hdr_t *)(pkt->data))->src)) {
+        if (gnrc_ipv6_blacklisted(&(dynamic_cast(ptr(ipv6_hdr_t), pkt->data))->src)) {
             DEBUG("ipv6: Source address blacklisted, dropping packet\n");
             gnrc_pktbuf_release(pkt);
             return;
@@ -765,7 +780,7 @@ static void _receive(gnrc_pktsnip_t *pkt)
         }
     }
 #ifdef MODULE_GNRC_IPV6_WHITELIST
-    else if (!gnrc_ipv6_whitelisted(&((ipv6_hdr_t *)(ipv6->data))->src)) {
+    else if (!gnrc_ipv6_whitelisted(&(dynamic_cast(ptr(ipv6_hdr_t), pkt->data))->src)) {
         /* if ipv6 header already marked*/
         DEBUG("ipv6: Source address not whitelisted, dropping packet\n");
         gnrc_pktbuf_release(pkt);
@@ -773,7 +788,7 @@ static void _receive(gnrc_pktsnip_t *pkt)
     }
 #endif
 #ifdef MODULE_GNRC_IPV6_BLACKLIST
-    else if (gnrc_ipv6_blacklisted(&((ipv6_hdr_t *)(ipv6->data))->src)) {
+    else if (gnrc_ipv6_blacklisted(&(dynamic_cast(ptr(ipv6_hdr_t), pkt->data))->src)) {
         /* if ipv6 header already marked*/
         DEBUG("ipv6: Source address blacklisted, dropping packet\n");
         gnrc_pktbuf_release(pkt);
@@ -782,7 +797,7 @@ static void _receive(gnrc_pktsnip_t *pkt)
 #endif
 
     /* extract header */
-    hdr = (ipv6_hdr_t *)ipv6->data;
+    ptr(ipv6_hdr_t) hdr = (ptr(ipv6_hdr_t))ipv6->data;
 
     uint16_t ipv6_len = byteorder_ntohs(hdr->len);
 
@@ -830,7 +845,8 @@ static void _receive(gnrc_pktsnip_t *pkt)
         }
         /* TODO: check if receiving interface is router */
         else if (--(hdr->hl) > 0) {  /* drop packets that *reach* Hop Limit 0 */
-            gnrc_pktsnip_t *reversed_pkt = NULL, *ptr = pkt;
+            ptr(gnrc_pktsnip_t) reversed_pkt = NULL;
+            ptr(gnrc_pktsnip_t) ptr = pkt;
 
             DEBUG("ipv6: forward packet to next hop\n");
 
@@ -850,7 +866,6 @@ static void _receive(gnrc_pktsnip_t *pkt)
 
             /* reverse packet snip list order */
             while (ptr != NULL) {
-                gnrc_pktsnip_t *next;
                 ptr = gnrc_pktbuf_start_write(ptr);     /* duplicate if not already done */
                 if (ptr == NULL) {
                     DEBUG("ipv6: unable to get write access to packet: dropping it\n");
@@ -858,7 +873,7 @@ static void _receive(gnrc_pktsnip_t *pkt)
                     gnrc_pktbuf_release(pkt);
                     return;
                 }
-                next = ptr->next;
+                ptr(gnrc_pktsnip_t) next = ptr->next;
                 ptr->next = reversed_pkt;
                 reversed_pkt = ptr;
                 ptr = next;
@@ -884,9 +899,9 @@ static void _receive(gnrc_pktsnip_t *pkt)
     gnrc_ipv6_demux(netif, first_ext, pkt, hdr->nh);
 }
 
-static void _decapsulate(gnrc_pktsnip_t *pkt)
+static void _decapsulate(ptr(gnrc_pktsnip_t) pkt)
 {
-    gnrc_pktsnip_t *ptr = pkt;
+    ptr(gnrc_pktsnip_t) ptr = pkt;
 
     pkt->type = GNRC_NETTYPE_UNDEF; /* prevent payload (the encapsulated packet)
                                      * from being removed */
