@@ -47,11 +47,15 @@ int gnrc_netreg_register(gnrc_nettype_t type,
 {
 #if defined(MODULE_GNRC_NETAPI_MBOX) || defined(MODULE_GNRC_NETAPI_CALLBACKS)
     /* only threads with a message queue are allowed to register at gnrc */
-    assert((entry->type != GNRC_NETREG_TYPE_DEFAULT) ||
-           sched_threads[entry->target.pid]->msg_array);
+    unchecked {
+        assert((entry->type != GNRC_NETREG_TYPE_DEFAULT) ||
+               sched_threads[entry->target.pid]->msg_array);
+    }
 #else
     /* only threads with a message queue are allowed to register at gnrc */
-    assert(sched_threads[entry->target.pid]->msg_array);
+    unchecked {
+        assert(sched_threads[entry->target.pid]->msg_array);
+    }
 #endif
 
     if (_INVALID_TYPE(type)) {
