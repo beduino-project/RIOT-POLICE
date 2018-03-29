@@ -30,12 +30,16 @@
 #include "net/gnrc/icmpv6.h"
 #include "net/gnrc/icmpv6/echo.h"
 
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
+
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
-static inline uint16_t _calc_csum(gnrc_pktsnip_t *hdr,
-                                  gnrc_pktsnip_t *pseudo_hdr,
-                                  gnrc_pktsnip_t *payload)
+static inline uint16_t _calc_csum(ptr(gnrc_pktsnip_t) hdr,
+                                  ptr(gnrc_pktsnip_t) pseudo_hdr,
+                                  ptr(gnrc_pktsnip_t) payload)
 {
     uint16_t csum = 0;
     uint16_t len = (uint16_t)hdr->size;
@@ -52,18 +56,16 @@ static inline uint16_t _calc_csum(gnrc_pktsnip_t *hdr,
     return ~csum;
 }
 
-void gnrc_icmpv6_demux(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
+void gnrc_icmpv6_demux(gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+                       gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)))
 {
-    gnrc_pktsnip_t *icmpv6, *ipv6;
-    icmpv6_hdr_t *hdr;
-
-    icmpv6 = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_ICMPV6);
+    ptr(gnrc_pktsnip_t) icmpv6 = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_ICMPV6);
 
     assert(icmpv6 != NULL);
 
     /* there can be extension headers between IPv6 and ICMPv6 header so we have
      * to search it */
-    ipv6 = gnrc_pktsnip_search_type(icmpv6, GNRC_NETTYPE_IPV6);
+    ptr(gnrc_pktsnip_t) ipv6 = gnrc_pktsnip_search_type(icmpv6, GNRC_NETTYPE_IPV6);
 
     assert(ipv6 != NULL);
 
@@ -74,7 +76,7 @@ void gnrc_icmpv6_demux(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
 
     /* Note: size will be checked again in packet handlers */
 
-    hdr = (icmpv6_hdr_t *)icmpv6->data;
+    ptr(icmpv6_hdr_t) hdr = (ptr(icmpv6_hdr_t))icmpv6->data;
 
     if (_calc_csum(icmpv6, ipv6, pkt)) {
         DEBUG("icmpv6: wrong checksum.\n");
@@ -87,8 +89,10 @@ void gnrc_icmpv6_demux(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
 #ifdef MODULE_GNRC_ICMPV6_ECHO
         case ICMPV6_ECHO_REQ:
             DEBUG("icmpv6: handle echo request.\n");
-            gnrc_icmpv6_echo_req_handle(netif, (ipv6_hdr_t *)ipv6->data,
-                                        (icmpv6_echo_t *)hdr, icmpv6->size);
+            unchecked {
+                gnrc_icmpv6_echo_req_handle(netif, (ptr(ipv6_hdr_t))ipv6->data,
+                                            (icmpv6_echo_t *)hdr, icmpv6->size);
+            }
             break;
 #endif
 
@@ -117,20 +121,19 @@ void gnrc_icmpv6_demux(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
     }
 }
 
-gnrc_pktsnip_t *gnrc_icmpv6_build(gnrc_pktsnip_t *next, uint8_t type,
-                                  uint8_t code, size_t size)
+gnrc_pktsnip_t *gnrc_icmpv6_build(gnrc_pktsnip_t *next atype(ptr(gnrc_pktsnip_t)),
+                                  uint8_t type, uint8_t code, size_t size)
+    atype(ptr(gnrc_pktsnip_t))
 {
-    gnrc_pktsnip_t *pkt;
-    icmpv6_hdr_t *icmpv6;
-
-    if ((pkt = gnrc_pktbuf_add(next, NULL, size, GNRC_NETTYPE_ICMPV6)) == NULL) {
+    ptr(gnrc_pktsnip_t) pkt = gnrc_pktbuf_add(next, NULL, size, GNRC_NETTYPE_ICMPV6);
+    if (pkt == NULL) {
         DEBUG("icmpv6: no space left in packet buffer\n");
         return NULL;
     }
 
     DEBUG("icmpv6: Building ICMPv6 message with type=%u, code=%u\n",
           type, code);
-    icmpv6 = (icmpv6_hdr_t *)pkt->data;
+    ptr(icmpv6_hdr_t) icmpv6 = (ptr(icmpv6_hdr_t))pkt->data;
     icmpv6->type = type;
     icmpv6->code = code;
     icmpv6->csum.u16 = 0;
@@ -138,7 +141,8 @@ gnrc_pktsnip_t *gnrc_icmpv6_build(gnrc_pktsnip_t *next, uint8_t type,
     return pkt;
 }
 
-int gnrc_icmpv6_calc_csum(gnrc_pktsnip_t *hdr, gnrc_pktsnip_t *pseudo_hdr)
+int gnrc_icmpv6_calc_csum(gnrc_pktsnip_t *hdr atype(ptr(gnrc_pktsnip_t)),
+                          gnrc_pktsnip_t *pseudo_hdr atype(ptr(gnrc_pktsnip_t)))
 {
     uint32_t csum = 0;
 
@@ -155,7 +159,7 @@ int gnrc_icmpv6_calc_csum(gnrc_pktsnip_t *hdr, gnrc_pktsnip_t *pseudo_hdr)
         return -ENOENT;
     }
 
-    ((icmpv6_hdr_t *)hdr->data)->csum = byteorder_htons(csum);
+    ((ptr(icmpv6_hdr_t))hdr->data)->csum = byteorder_htons(csum);
 
     return 0;
 }
