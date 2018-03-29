@@ -27,12 +27,17 @@
 #ifndef NET_GNRC_ICMPV6_H
 #define NET_GNRC_ICMPV6_H
 
+#include "checkedc.h"
 #include "net/icmpv6.h"
 #include "net/gnrc/netif.h"
 #include "net/gnrc/pkt.h"
 
 #include "net/gnrc/icmpv6/echo.h"
 #include "net/gnrc/icmpv6/error.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,7 +49,8 @@ extern "C" {
  * @param[in] netif     The receiving interface
  * @param[in] pkt       The packet to demultiplex.
  */
-void gnrc_icmpv6_demux(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt);
+void gnrc_icmpv6_demux(gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+                       gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)));
 
 /**
  * @brief   Builds an ICMPv6 message for sending.
@@ -58,7 +64,9 @@ void gnrc_icmpv6_demux(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt);
  * @return  The ICMPv6 message on success
  * @return  NULL, on failure
  */
-gnrc_pktsnip_t *gnrc_icmpv6_build(gnrc_pktsnip_t *next, uint8_t type, uint8_t code, size_t size);
+gnrc_pktsnip_t *gnrc_icmpv6_build(gnrc_pktsnip_t *next atype(ptr(gnrc_pktsnip_t)),
+                                  uint8_t type, uint8_t code, size_t size)
+    atype(ptr(gnrc_pktsnip_t));
 
 /**
  * @brief   Calculates the checksum for an ICMPv6 packet.
@@ -78,6 +86,10 @@ int gnrc_icmpv6_calc_csum(gnrc_pktsnip_t *hdr atype(ptr(gnrc_pktsnip_t)),
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_ICMPV6_H */
