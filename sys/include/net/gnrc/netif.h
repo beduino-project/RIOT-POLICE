@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "checkedc.h"
 #include "kernel_types.h"
 #include "msg.h"
 #include "net/ipv6/addr.h"
@@ -52,57 +53,14 @@ extern "C" {
 #endif
 
 /**
- * @brief   Operations to an interface
- */
-typedef struct gnrc_netif_ops gnrc_netif_ops_t;
-
-/**
  * @brief   Representation of a network interface
  */
-typedef struct {
-    const gnrc_netif_ops_t *ops;            /**< Operations of the network interface */
-    netdev_t *dev;                          /**< Network device of the network interface */
-    rmutex_t mutex;                         /**< Mutex of the interface */
-#if defined(MODULE_GNRC_IPV6) || DOXYGEN
-    gnrc_netif_ipv6_t ipv6;                 /**< IPv6 component */
-#endif
-#if defined(MODULE_GNRC_MAC) || DOXYGEN
-    gnrc_netif_mac_t mac;                  /**< @ref net_gnrc_mac component */
-#endif  /* MODULE_GNRC_MAC */
-    /**
-     * @brief   Flags for the interface
-     *
-     * @see net_gnrc_netif_flags
-     */
-    uint32_t flags;
-#if (GNRC_NETIF_L2ADDR_MAXLEN > 0)
-    /**
-     * @brief   The link-layer address currently used as the source address
-     *          on this interface.
-     *
-     * @note    Only available if @ref GNRC_NETIF_L2ADDR_MAXLEN > 0
-     */
-    uint8_t l2addr[GNRC_NETIF_L2ADDR_MAXLEN];
-
-    /**
-     * @brief   Length in bytes of gnrc_netif_t::l2addr
-     *
-     * @note    Only available if @ref GNRC_NETIF_L2ADDR_MAXLEN > 0
-     */
-    uint8_t l2addr_len;
-#endif
-#if defined(MODULE_GNRC_SIXLOWPAN) || DOXYGEN
-    gnrc_netif_6lo_t sixlo;                 /**< 6Lo component */
-#endif
-    uint8_t cur_hl;                         /**< Current hop-limit for out-going packets */
-    uint8_t device_type;                    /**< Device type */
-    kernel_pid_t pid;                       /**< PID of the network interface's thread */
-} gnrc_netif_t;
+typedef struct gnrc_netif gnrc_netif_t;
 
 /**
- * @see gnrc_netif_ops_t
+ * @brief   Operations to an interface
  */
-struct gnrc_netif_ops {
+typedef struct {
     /**
      * @brief   Initializes network interface beyond the default settings
      *
@@ -201,6 +159,54 @@ struct gnrc_netif_ops {
      * @param[in] msg   Message to be handled.
      */
     void (*msg_handler)(gnrc_netif_t *netif, msg_t *msg);
+} gnrc_netif_ops_t;
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
+
+/**
+ * @see gnrc_netif_t
+ */
+struct gnrc_netif {
+    const gnrc_netif_ops_t *ops
+        atype(ptr(const gnrc_netif_ops_t)); /**< Operations of the network interface */
+    netdev_t *dev atype(ptr(netdev_t));     /**< Network device of the network interface */
+    rmutex_t mutex;                         /**< Mutex of the interface */
+#if defined(MODULE_GNRC_IPV6) || DOXYGEN
+    gnrc_netif_ipv6_t ipv6;                 /**< IPv6 component */
+#endif
+#if defined(MODULE_GNRC_MAC) || DOXYGEN
+    gnrc_netif_mac_t mac;                  /**< @ref net_gnrc_mac component */
+#endif  /* MODULE_GNRC_MAC */
+    /**
+     * @brief   Flags for the interface
+     *
+     * @see net_gnrc_netif_flags
+     */
+    uint32_t flags;
+#if (GNRC_NETIF_L2ADDR_MAXLEN > 0)
+    /**
+     * @brief   The link-layer address currently used as the source address
+     *          on this interface.
+     *
+     * @note    Only available if @ref GNRC_NETIF_L2ADDR_MAXLEN > 0
+     */
+    uint8_t l2addr[GNRC_NETIF_L2ADDR_MAXLEN] atype(uint8_t checked[GNRC_NETIF_L2ADDR_MAXLEN]);
+
+    /**
+     * @brief   Length in bytes of gnrc_netif_t::l2addr
+     *
+     * @note    Only available if @ref GNRC_NETIF_L2ADDR_MAXLEN > 0
+     */
+    uint8_t l2addr_len;
+#endif
+#if defined(MODULE_GNRC_SIXLOWPAN) || DOXYGEN
+    gnrc_netif_6lo_t sixlo;                 /**< 6Lo component */
+#endif
+    uint8_t cur_hl;                         /**< Current hop-limit for out-going packets */
+    uint8_t device_type;                    /**< Device type */
+    kernel_pid_t pid;                       /**< PID of the network interface's thread */
 };
 
 /**
@@ -222,9 +228,12 @@ struct gnrc_netif_ops {
  *
  * @return  The network interface on success.
  */
-gnrc_netif_t *gnrc_netif_create(char *stack, int stacksize, char priority,
-                                const char *name, netdev_t *dev,
-                                const gnrc_netif_ops_t *ops);
+gnrc_netif_t *gnrc_netif_create(char *stack acount(stacksize), int stacksize,
+                                char priority,
+                                const char *name atype(nt_array_ptr(const char)),
+                                netdev_t *dev atype(ptr(netdev_t)),
+                                const gnrc_netif_ops_t *ops atype(ptr(const gnrc_netif_ops_t)))
+    atype(ptr(gnrc_netif_t));
 
 /**
  * @brief   Get number of network interfaces actually allocated
@@ -241,7 +250,8 @@ unsigned gnrc_netif_numof(void);
  * @return  The next network interface after @p prev.
  * @return  NULL, if @p prev was the last network interface.
  */
-gnrc_netif_t *gnrc_netif_iter(const gnrc_netif_t *prev);
+gnrc_netif_t *gnrc_netif_iter(const gnrc_netif_t *prev atype(ptr(const gnrc_netif_t)))
+    atype(ptr(gnrc_netif_t));
 
 /**
  * @brief   Get network interface by PID
@@ -251,7 +261,8 @@ gnrc_netif_t *gnrc_netif_iter(const gnrc_netif_t *prev);
  * @return  The network interface on success.
  * @return  NULL, if no network interface with PID exists.
  */
-gnrc_netif_t *gnrc_netif_get_by_pid(kernel_pid_t pid);
+gnrc_netif_t *gnrc_netif_get_by_pid(kernel_pid_t pid)
+    atype(ptr(gnrc_netif_t));
 
 /**
  * @brief   Gets the (unicast on anycast) IPv6 addresss of an interface (if IPv6
@@ -273,8 +284,8 @@ gnrc_netif_t *gnrc_netif_get_by_pid(kernel_pid_t pid);
  *          success (including 0).
  * @return  -ENOTSUP, if @p netif doesn't support IPv6.
  */
-static inline int gnrc_netif_ipv6_addrs_get(const gnrc_netif_t *netif,
-                                            ipv6_addr_t *addrs,
+static inline int gnrc_netif_ipv6_addrs_get(const gnrc_netif_t *netif atype(ptr(const gnrc_netif_t)),
+                                            ipv6_addr_t *addrs acount(max_len),
                                             size_t max_len)
 {
     assert(netif != NULL);
@@ -304,8 +315,8 @@ static inline int gnrc_netif_ipv6_addrs_get(const gnrc_netif_t *netif,
  *          corresponding solicited-nodes multicast address.
  * @return  -ENOTSUP, if @p netif doesn't support IPv6.
  */
-static inline int gnrc_netif_ipv6_addr_add(const gnrc_netif_t *netif,
-                                           ipv6_addr_t *addr, unsigned pfx_len,
+static inline int gnrc_netif_ipv6_addr_add(const gnrc_netif_t *netif atype(ptr(const gnrc_netif_t)),
+                                           ipv6_addr_t *addr atype(ptr(ipv6_addr_t)), unsigned pfx_len,
                                            uint8_t flags)
 {
     assert(netif != NULL);
@@ -329,8 +340,8 @@ static inline int gnrc_netif_ipv6_addr_add(const gnrc_netif_t *netif,
  * @return  sizeof(ipv6_addr_t) on success.
  * @return  -ENOTSUP, if @p netif doesn't support IPv6.
  */
-static inline int gnrc_netif_ipv6_addr_remove(const gnrc_netif_t *netif,
-                                              ipv6_addr_t *addr)
+static inline int gnrc_netif_ipv6_addr_remove(const gnrc_netif_t *netif atype(ptr(const gnrc_netif_t)),
+                                              ipv6_addr_t *addr atype(ptr(ipv6_addr_t)))
 {
     assert(netif != NULL);
     assert(addr != NULL);
@@ -358,8 +369,8 @@ static inline int gnrc_netif_ipv6_addr_remove(const gnrc_netif_t *netif,
  *          success (including 0).
  * @return  -ENOTSUP, if @p netif doesn't support IPv6.
  */
-static inline int gnrc_netif_ipv6_groups_get(const gnrc_netif_t *netif,
-                                             ipv6_addr_t *groups,
+static inline int gnrc_netif_ipv6_groups_get(const gnrc_netif_t *netif atype(ptr(const gnrc_netif_t)),
+                                             ipv6_addr_t *groups abyte_count(max_len),
                                              size_t max_len)
 {
     assert(netif != NULL);
@@ -382,8 +393,8 @@ static inline int gnrc_netif_ipv6_groups_get(const gnrc_netif_t *netif,
  * @return  -ENOMEM, if no space is left on @p netif to add @p group.
  * @return  -ENOTSUP, if @p netif doesn't support IPv6.
  */
-static inline int gnrc_netif_ipv6_group_join(const gnrc_netif_t *netif,
-                                             ipv6_addr_t *group)
+static inline int gnrc_netif_ipv6_group_join(const gnrc_netif_t *netif atype(ptr(const gnrc_netif_t)),
+                                             ipv6_addr_t *group atype(ptr(ipv6_addr_t)))
 {
     assert(netif != NULL);
     assert(group != NULL);
@@ -404,8 +415,8 @@ static inline int gnrc_netif_ipv6_group_join(const gnrc_netif_t *netif,
  * @return  sizeof(ipv6_addr_t) on success.
  * @return  -ENOTSUP, if @p netif doesn't support IPv6.
  */
-static inline int gnrc_netif_ipv6_group_leave(const gnrc_netif_t *netif,
-                                              ipv6_addr_t *group)
+static inline int gnrc_netif_ipv6_group_leave(const gnrc_netif_t *netif atype(ptr(const gnrc_netif_t)),
+                                              ipv6_addr_t *group atype(ptr(ipv6_addr_t)))
 {
     assert(netif != NULL);
     assert(group != NULL);
@@ -424,7 +435,8 @@ static inline int gnrc_netif_ipv6_group_leave(const gnrc_netif_t *netif,
  * @return  Return value of netdev_driver_t::get() of gnrc_netif_t::dev of
  *          @p netif.
  */
-int gnrc_netif_get_from_netdev(gnrc_netif_t *netif, gnrc_netapi_opt_t *opt);
+int gnrc_netif_get_from_netdev(gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+                               gnrc_netapi_opt_t *opt atype(ptr(gnrc_netapi_opt_t)));
 
 /**
  * @brief   Default operation for gnrc_netif_ops_t::set()
@@ -437,8 +449,8 @@ int gnrc_netif_get_from_netdev(gnrc_netif_t *netif, gnrc_netapi_opt_t *opt);
  * @return  Return value of netdev_driver_t::set() of gnrc_netif_t::dev of
  *          @p netif.
  */
-int gnrc_netif_set_from_netdev(gnrc_netif_t *netif,
-                               const gnrc_netapi_opt_t *opt);
+int gnrc_netif_set_from_netdev(gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+                               const gnrc_netapi_opt_t *opt atype(ptr(const gnrc_netapi_opt_t)));
 
 /**
  * @brief   Converts a hardware address to a human readable string.
@@ -456,7 +468,10 @@ int gnrc_netif_set_from_netdev(gnrc_netif_t *netif,
  *
  * @return  @p out.
  */
-char *gnrc_netif_addr_to_str(const uint8_t *addr, size_t addr_len, char *out);
+char *gnrc_netif_addr_to_str(const uint8_t *addr acount(addr_len),
+                             size_t addr_len,
+                             char *out atype(nt_array_ptr(char)))
+    atype(nt_array_ptr(char));
 
 /**
  * @brief   Parses a string of colon-separated hexadecimals to a hardware
@@ -476,10 +491,15 @@ char *gnrc_netif_addr_to_str(const uint8_t *addr, size_t addr_len, char *out);
  * @return  Actual length of @p out on success.
  * @return  0, on failure.
  */
-size_t gnrc_netif_addr_from_str(const char *str, uint8_t *out);
+size_t gnrc_netif_addr_from_str(const char *str atype(nt_array_ptr(const char)),
+                                uint8_t *out atype(ptr(uint8_t)));
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_NETIF_H */
