@@ -24,7 +24,12 @@
 #include <stdatomic.h>
 
 #include "mutex.h"
+#include "checkedc.h"
 #include "kernel_types.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
  extern "C" {
@@ -70,7 +75,7 @@ typedef struct rmutex_t {
  *          Only use the function call for dynamically allocated mutexes.
  * @param[out] rmutex    pre-allocated mutex structure, must not be NULL.
  */
-static inline void rmutex_init(rmutex_t *rmutex)
+static inline void rmutex_init(rmutex_t *rmutex atype(ptr(rmutex_t)))
 {
     rmutex_t empty_rmutex = RMUTEX_INIT;
     *rmutex = empty_rmutex;
@@ -85,7 +90,7 @@ static inline void rmutex_init(rmutex_t *rmutex)
  * @return 1 if mutex was unlocked, now it is locked.
  * @return 0 if the mutex was locked.
  */
-int rmutex_trylock(rmutex_t *rmutex);
+int rmutex_trylock(rmutex_t *rmutex atype(ptr(rmutex_t)));
 
 /**
  * @brief Locks a recursive mutex, blocking.
@@ -93,17 +98,21 @@ int rmutex_trylock(rmutex_t *rmutex);
  * @param[in] rmutex Recursive mutex object to lock. Has to be
  *                 initialized first. Must not be NULL.
  */
-void rmutex_lock(rmutex_t *rmutex);
+void rmutex_lock(rmutex_t *rmutex atype(ptr(rmutex_t)));
 
 /**
  * @brief Unlocks the recursive mutex.
  *
  * @param[in] rmutex Recursive mutex object to unlock, must not be NULL.
  */
-void rmutex_unlock(rmutex_t *rmutex);
+void rmutex_unlock(rmutex_t *rmutex atype(ptr(rmutex_t)));
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* RMUTEX_H */
