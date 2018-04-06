@@ -29,6 +29,7 @@
 #ifndef NET_GNRC_IPV6_H
 #define NET_GNRC_IPV6_H
 
+#include "checkedc.h"
 #include "kernel_types.h"
 #include "net/gnrc.h"
 #include "thread.h"
@@ -40,6 +41,10 @@
 
 #ifdef MODULE_FIB
 #include "net/fib.h"
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
 #endif
 
 #ifdef __cplusplus
@@ -150,8 +155,10 @@ kernel_pid_t gnrc_ipv6_init(void);
  * @param[in] pkt       A packet.
  * @param[in] nh        A protocol number (see @ref net_protnum) of the current snip.
  */
-void gnrc_ipv6_demux(gnrc_netif_t *netif, gnrc_pktsnip_t *current,
-                     gnrc_pktsnip_t *pkt, uint8_t nh);
+void gnrc_ipv6_demux(gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+                     gnrc_pktsnip_t *current atype(ptr(gnrc_pktsnip_t)),
+                     gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),
+                     uint8_t nh);
 
 /**
  * @brief   Get the IPv6 header from a given list of @ref gnrc_pktsnip_t
@@ -164,10 +171,15 @@ void gnrc_ipv6_demux(gnrc_netif_t *netif, gnrc_pktsnip_t *current,
  * @return A pointer to the @ref ipv6_hdr_t of the packet.
  * @return NULL if the packet does not contain an IPv6 header.
  */
-ipv6_hdr_t *gnrc_ipv6_get_header(gnrc_pktsnip_t *pkt);
+ipv6_hdr_t *gnrc_ipv6_get_header(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)))
+    atype(ptr(ipv6_hdr_t));
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_IPV6_H */
