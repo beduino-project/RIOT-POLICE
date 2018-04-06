@@ -24,7 +24,12 @@
 
 #include <stdbool.h>
 
+#include "checkedc.h"
 #include "net/ipv6/addr.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,7 +50,7 @@ extern "C" {
  * @return  0, on success.
  * @return  -1, if blacklist is full.
  */
-int gnrc_ipv6_blacklist_add(const ipv6_addr_t *addr);
+int gnrc_ipv6_blacklist_add(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)));
 
 /**
  * @brief   Removes an IPv6 address from the blacklist.
@@ -54,7 +59,7 @@ int gnrc_ipv6_blacklist_add(const ipv6_addr_t *addr);
  *
  * @param[in] addr  An IPv6 address.
  */
-void gnrc_ipv6_blacklist_del(const ipv6_addr_t *addr);
+void gnrc_ipv6_blacklist_del(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)));
 
 /**
  * @brief   Checks if an IPv6 address is blacklisted.
@@ -64,7 +69,7 @@ void gnrc_ipv6_blacklist_del(const ipv6_addr_t *addr);
  * @return  true, if @p addr is blacklisted.
  * @return  false, if @p addr is not blacklisted.
  */
-bool gnrc_ipv6_blacklisted(const ipv6_addr_t *addr);
+bool gnrc_ipv6_blacklisted(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)));
 
 /**
  * @brief   Prints the blacklist.
@@ -73,6 +78,10 @@ void gnrc_ipv6_blacklist_print(void);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_IPV6_BLACKLIST_H */
