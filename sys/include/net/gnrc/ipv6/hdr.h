@@ -21,8 +21,13 @@
 
 #include <stdint.h>
 
+#include "checkedc.h"
 #include "net/ipv6/hdr.h"
 #include "net/gnrc/pkt.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,11 +48,17 @@ extern "C" {
  * @return  The an IPv6 header in packet buffer on success.
  * @return  NULL on error.
  */
-gnrc_pktsnip_t *gnrc_ipv6_hdr_build(gnrc_pktsnip_t *payload, const ipv6_addr_t *src,
-                                    const ipv6_addr_t *dst);
+gnrc_pktsnip_t *gnrc_ipv6_hdr_build(gnrc_pktsnip_t *payload atype(ptr(gnrc_pktsnip_t)),
+                                    const ipv6_addr_t *src atype(ptr(const ipv6_addr_t)),
+                                    const ipv6_addr_t *dst atype(ptr(const ipv6_addr_t)))
+    atype(ptr(gnrc_pktsnip_t));
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_IPV6_HDR_H */
