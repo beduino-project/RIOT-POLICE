@@ -43,8 +43,8 @@ extern "C" {
  *                 between different byte orders at compile time.
  */
 typedef union __attribute__((packed)) {
-    uint16_t    u16;            /**< 16 bit representation */
-    uint8_t      u8 checked[2]; /**< 8 bit representation */
+    uint16_t    u16;                              /**< 16 bit representation */
+    uint8_t      u8[2] atype(uint8_t checked[2]); /**< 8 bit representation */
 } le_uint16_t;
 
 /**
@@ -53,10 +53,10 @@ typedef union __attribute__((packed)) {
  *                 between different byte orders at compile time.
  */
 typedef union __attribute__((packed)) {
-    uint32_t    u32;            /**< 32 bit representation */
-    uint8_t      u8 checked[4]; /**< 8 bit representation */
-    uint16_t    u16 checked[2]; /**< 16 bit representation */
-    le_uint16_t l16 checked[2]; /**< little endian 16 bit representation */
+    uint32_t    u32;                                  /**< 32 bit representation */
+    uint8_t      u8[4] atype(uint8_t checked[4]);     /**< 8 bit representation */
+    uint16_t    u16[2] atype(uint16_t checked[2]);    /**< 16 bit representation */
+    le_uint16_t l16[2] atype(le_uint16_t checked[2]); /**< little endian 16 bit representation */
 } le_uint32_t;
 
 /**
@@ -65,12 +65,12 @@ typedef union __attribute__((packed)) {
  *                 between different byte orders at compile time.
  */
 typedef union __attribute__((packed)) {
-    uint64_t    u64;            /**< 64 bit representation */
-    uint8_t      u8 checked[8]; /**< 8 bit representation */
-    uint16_t    u16 checked[4]; /**< 16 bit representation */
-    uint32_t    u32 checked[2]; /**< 32 bit representation */
-    le_uint16_t l16 checked[4]; /**< little endian 16 bit representation */
-    le_uint32_t l32 checked[2]; /**< little endian 32 bit representation */
+    uint64_t    u64;                                  /**< 64 bit representation */
+    uint8_t      u8[8] atype(uint8_t checked[8]);     /**< 8 bit representation */
+    uint16_t    u16[4] atype(uint16_t checked[4]);    /**< 16 bit representation */
+    uint32_t    u32[2] atype(uint32_t checked[2]);    /**< 32 bit representation */
+    le_uint16_t l16[4] atype(le_uint16_t checked[4]); /**< little endian 16 bit representation */
+    le_uint32_t l32[2] atype(le_uint32_t checked[2]); /**< little endian 32 bit representation */
 } le_uint64_t;
 
 /**
@@ -79,8 +79,8 @@ typedef union __attribute__((packed)) {
  *                 between different byte orders at compile time.
  */
 typedef union __attribute__((packed)) {
-    uint16_t    u16;            /**< 16 bit representation */
-    uint8_t      u8 checked[2]; /**< 8 bit representation */
+    uint16_t    u16;                              /**< 16 bit representation */
+    uint8_t      u8[2] atype(uint8_t checked[2]); /**< 8 bit representation */
 } be_uint16_t;
 
 /**
@@ -89,10 +89,10 @@ typedef union __attribute__((packed)) {
  *                 between different byte orders at compile time.
  */
 typedef union __attribute__((packed)) {
-    uint32_t    u32;            /**< 32 bit representation */
-    uint8_t      u8 checked[4]; /**< 8 bit representation */
-    uint16_t    u16 checked[2]; /**< 16 bit representation */
-    be_uint16_t b16 checked[2]; /**< big endian 16 bit representation */
+    uint32_t    u32;                                  /**< 32 bit representation */
+    uint8_t      u8[4] atype(uint8_t checked[4]);     /**< 8 bit representation */
+    uint16_t    u16[2] atype(uint16_t checked[2]);    /**< 16 bit representation */
+    be_uint16_t b16[2] atype(be_uint16_t checked[2]); /**< big endian 16 bit representation */
 } be_uint32_t;
 
 /**
@@ -101,12 +101,12 @@ typedef union __attribute__((packed)) {
  *                 between different byte orders at compile time.
  */
 typedef union __attribute__((packed)) {
-    uint64_t    u64;            /**< 64 bit representation */
-    uint8_t      u8 checked[8]; /**< 8 bit representation */
-    uint16_t    u16 checked[4]; /**< 16 bit representation */
-    uint32_t    u32 checked[2]; /**< 32 bit representation */
-    be_uint16_t b16 checked[4]; /**< big endian 16 bit representation */
-    be_uint32_t b32 checked[2]; /**< big endian 32 bit representation */
+    uint64_t    u64;                                  /**< 64 bit representation */
+    uint8_t      u8[8] atype(uint8_t checked[8]);     /**< 8 bit representation */
+    uint16_t    u16[4] atype(uint16_t checked[4]);    /**< 16 bit representation */
+    uint32_t    u32[2] atype(uint32_t checked[2]);    /**< 32 bit representation */
+    be_uint16_t b16[4] atype(be_uint16_t checked[4]); /**< big endian 16 bit representation */
+    be_uint32_t b32[2] atype(be_uint32_t checked[2]); /**< big endian 32 bit representation */
 } be_uint64_t;
 
 /**
