@@ -77,10 +77,10 @@ extern "C" {
  * @brief Data type to represent an IPv6 address.
  */
 typedef union {
-    uint8_t u8 checked[16];             /**< divided by 16 8-bit words. */
-    network_uint16_t u16 checked[8];    /**< divided by 8 16-bit words. */
-    network_uint32_t u32 checked[4];    /**< divided by 4 32-bit words. */
-    network_uint64_t u64 checked[2];    /**< divided by 2 64-bit words. */
+    uint8_t u8[16] atype(uint8_t checked[16]);                  /**< divided by 16 8-bit words. */
+    network_uint16_t u16[8] atype(network_uint16_t checked[8]); /**< divided by 8 16-bit words. */
+    network_uint32_t u32[4] atype(network_uint32_t checked[4]); /**< divided by 4 32-bit words. */
+    network_uint64_t u64[2] atype(network_uint64_t checked[2]); /**< divided by 2 64-bit words. */
 } ipv6_addr_t;
 
 /**
