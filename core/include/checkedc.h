@@ -69,12 +69,27 @@
 /**
  * @def assume_bounds_cast
  *
- * @brief Perform a cast to type @p without verifying the bounds.
+ * @brief Perform an unsafe cast to type @p t.
  */
 #ifdef USE_CHECKEDC
 #define assume_bounds_cast(t, ...) _Assume_bounds_cast<t>(__VA_ARGS__)
 #else
 #define assume_bounds_cast(...)
+#endif
+
+/**
+ * @def assume_cast
+ *
+ * @brief Perform an unsafe cast to type @p t for expression @p e.
+ *
+ * This function is a shortcut for ::assume_bounds_cast wit the
+ * exception that it also generates code for casting types when
+ * *USE_CHECKEDC* is unset.
+ */
+#ifdef USE_CHECKEDC
+#define assume_cast(t, e) assume_bounds_cast(t, e)
+#else
+#define assume_cast(t, e) (t)e
 #endif
 
 /**
@@ -126,7 +141,7 @@
  * @brief Perform a cast to type @p t for expression @p e.
  *
  * This function is a shortcut for ::dynamic_bounds_cast with the
- * exception that it also generate code for casting types when
+ * exception that it also generates code for casting types when
  * *USE_CHECKEDC* is unset.
  */
 #ifdef USE_CHECKEDC
