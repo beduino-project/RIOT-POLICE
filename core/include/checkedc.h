@@ -67,6 +67,17 @@
 #define acount(e) annotate(count(e))
 
 /**
+ * @def assume_bounds_cast
+ *
+ * @brief Perform a cast to type @p without verifying the bounds.
+ */
+#ifdef USE_CHECKEDC
+#define assume_bounds_cast(t, ...) _Assume_bounds_cast<t>(__VA_ARGS__)
+#else
+#define assume_bounds_cast(...)
+#endif
+
+/**
  * @def atype
  *
  * @brief Add a type annotation using expression @p e.
