@@ -240,11 +240,11 @@ unchecked {
         switch (msg.type) {
             case GNRC_NETAPI_MSG_TYPE_RCV:
                 DEBUG("udp: GNRC_NETAPI_MSG_TYPE_RCV\n");
-                _receive(assume_bounds_cast(ptr(gnrc_pktsnip_t), msg.content.ptr));
+                _receive(assume_cast(ptr(gnrc_pktsnip_t), msg.content.ptr));
                 break;
             case GNRC_NETAPI_MSG_TYPE_SND:
                 DEBUG("udp: GNRC_NETAPI_MSG_TYPE_SND\n");
-                _send(assume_bounds_cast(ptr(gnrc_pktsnip_t), msg.content.ptr));
+                _send(assume_cast(ptr(gnrc_pktsnip_t), msg.content.ptr));
                 break;
             case GNRC_NETAPI_MSG_TYPE_SET:
             case GNRC_NETAPI_MSG_TYPE_GET:
