@@ -126,7 +126,7 @@
  * @brief Perform a cast to type @p t for expression @p e.
  *
  * This function is a shortcut for ::dynamic_bounds_cast with the
- * exception that it also generate code for casting types when
+ * exception that it also generates code for casting types when
  * *USE_CHECKEDC* is unset.
  */
 #ifdef USE_CHECKEDC
