@@ -220,7 +220,7 @@ static void _send(ptr(gnrc_pktsnip_t) pkt)
 
 static void *_event_loop(void *arg atype(ptr(void)))
     atype(ptr(void))
-{
+unchecked {
     (void)arg;
     msg_t msg, reply;
     msg_t msg_queue checked[GNRC_UDP_MSG_QUEUE_SIZE];
@@ -240,11 +240,11 @@ static void *_event_loop(void *arg atype(ptr(void)))
         switch (msg.type) {
             case GNRC_NETAPI_MSG_TYPE_RCV:
                 DEBUG("udp: GNRC_NETAPI_MSG_TYPE_RCV\n");
-                _receive(dynamic_cast(ptr(gnrc_pktsnip_t), msg.content.ptr));
+                _receive(assume_bounds_cast(ptr(gnrc_pktsnip_t), msg.content.ptr));
                 break;
             case GNRC_NETAPI_MSG_TYPE_SND:
                 DEBUG("udp: GNRC_NETAPI_MSG_TYPE_SND\n");
-                _send(dynamic_cast(ptr(gnrc_pktsnip_t), msg.content.ptr));
+                _send(assume_bounds_cast(ptr(gnrc_pktsnip_t), msg.content.ptr));
                 break;
             case GNRC_NETAPI_MSG_TYPE_SET:
             case GNRC_NETAPI_MSG_TYPE_GET:
