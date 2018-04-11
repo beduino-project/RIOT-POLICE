@@ -25,6 +25,7 @@
 #ifndef NET_GNRC_IPV6_NIB_H
 #define NET_GNRC_IPV6_NIB_H
 
+#include "checkedc.h"
 #include "net/gnrc/ipv6/nib/abr.h"
 #include "net/gnrc/ipv6/nib/ft.h"
 #include "net/gnrc/ipv6/nib/nc.h"
@@ -36,6 +37,10 @@
 #include "net/gnrc/ipv6/nib/nc.h"
 #include "net/gnrc/netif.h"
 #include "net/gnrc/pkt.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -269,7 +274,7 @@ void gnrc_ipv6_nib_init(void);
  *
  * @param[in,out] netif The interface to be managed by the NIB
  */
-void gnrc_ipv6_nib_init_iface(gnrc_netif_t *netif);
+void gnrc_ipv6_nib_init_iface(gnrc_netif_t *netif atype(ptr(gnrc_netif_t)));
 
 /**
  * @brief   Gets link-layer address of next hop to a destination address
@@ -292,9 +297,10 @@ void gnrc_ipv6_nib_init_iface(gnrc_netif_t *netif);
  *          cache entry will be created in this case and no neighbor
  *          solicitation sent).
  */
-int gnrc_ipv6_nib_get_next_hop_l2addr(const ipv6_addr_t *dst,
-                                      gnrc_netif_t *netif, gnrc_pktsnip_t *pkt,
-                                      gnrc_ipv6_nib_nc_t *nce);
+int gnrc_ipv6_nib_get_next_hop_l2addr(const ipv6_addr_t *dst atype(ptr(const ipv6_addr_t)),
+                                      gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+                                      gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),
+                                      gnrc_ipv6_nib_nc_t *nce atype(ptr(gnrc_ipv6_nib_nc_t)));
 
 /**
  * @brief   Handles a received ICMPv6 packet
@@ -336,8 +342,10 @@ int gnrc_ipv6_nib_get_next_hop_l2addr(const ipv6_addr_t *dst,
  *                          packet.
  * @param[in] icmpv6_len    The number of bytes at @p icmpv6.
  */
-void gnrc_ipv6_nib_handle_pkt(gnrc_netif_t *netif, const ipv6_hdr_t *ipv6,
-                              const icmpv6_hdr_t *icmpv6, size_t icmpv6_len);
+void gnrc_ipv6_nib_handle_pkt(gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+                              const ipv6_hdr_t *ipv6 atype(ptr(const ipv6_hdr_t)),
+                              const icmpv6_hdr_t *icmpv6 abyte_count(icmpv6_len),
+                              size_t icmpv6_len);
 
 /**
  * @brief   Handles a timer event
@@ -346,7 +354,7 @@ void gnrc_ipv6_nib_handle_pkt(gnrc_netif_t *netif, const ipv6_hdr_t *ipv6,
  * @param[in] type  Type of the timer event (see [timer event
  *                  types](@ref net_gnrc_ipv6_nib_msg))
  */
-void gnrc_ipv6_nib_handle_timer_event(void *ctx, uint16_t type);
+void gnrc_ipv6_nib_handle_timer_event(void *ctx atype(ptr(void)), uint16_t type);
 
 #if GNRC_IPV6_NIB_CONF_ROUTER || defined(DOXYGEN)
 /**
@@ -358,7 +366,8 @@ void gnrc_ipv6_nib_handle_timer_event(void *ctx, uint16_t type);
  *                      `false`, to disable advertising the interface as a
  *                      router.
  */
-void gnrc_ipv6_nib_change_rtr_adv_iface(gnrc_netif_t *netif, bool enable);
+void gnrc_ipv6_nib_change_rtr_adv_iface(gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+                                        bool enable);
 #else
 /**
  * @brief   Optimization to NOP for non-routers
@@ -369,6 +378,10 @@ void gnrc_ipv6_nib_change_rtr_adv_iface(gnrc_netif_t *netif, bool enable);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_IPV6_NIB_H */

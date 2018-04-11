@@ -29,9 +29,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "checkedc.h"
 #include "net/gnrc/netif.h"
 #include "net/gnrc/pkt.h"
 #include "net/ipv6/ext.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,9 +62,9 @@ extern "C" {
  * @param[in] pkt       A packet.
  * @param[in] nh        A protocol number (see @ref net_protnum) of the current snip.
  */
-void gnrc_ipv6_ext_demux(gnrc_netif_t *netif,
-                         gnrc_pktsnip_t *current,
-                         gnrc_pktsnip_t *pkt,
+void gnrc_ipv6_ext_demux(gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+                         gnrc_pktsnip_t *current atype(ptr(gnrc_pktsnip_t)),
+                         gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),
                          uint8_t nh);
 
 /**
@@ -74,11 +79,17 @@ void gnrc_ipv6_ext_demux(gnrc_netif_t *netif,
  * @return  The extension header on success.
  * @return  NULL, on error.
  */
-gnrc_pktsnip_t *gnrc_ipv6_ext_build(gnrc_pktsnip_t *ipv6, gnrc_pktsnip_t *next,
-                                    uint8_t nh, size_t size);
+gnrc_pktsnip_t *gnrc_ipv6_ext_build(gnrc_pktsnip_t *ipv6 atype(ptr(gnrc_pktsnip_t)),
+                                    gnrc_pktsnip_t *next atype(ptr(gnrc_pktsnip_t)),
+                                    uint8_t nh, size_t size)
+    atype(ptr(gnrc_pktsnip_t));
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_IPV6_EXT_H */
