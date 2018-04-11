@@ -78,6 +78,21 @@
 #endif
 
 /**
+ * @def assume_cast
+ *
+ * @brief Perform an unsafe cast to type @p t for expression @p e.
+ *
+ * This function is a shortcut for ::assume_bounds_cast wit the
+ * exception that it also generates code for casting types when
+ * *USE_CHECKEDC* is unset.
+ */
+#ifdef USE_CHECKEDC
+#define assume_cast(t, e) assume_bounds_cast(t, e)
+#else
+#define assume_cast(t, e) (t)e
+#endif
+
+/**
  * @def atype
  *
  * @brief Add a type annotation using expression @p e.
