@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "checkedc.h"
 #include "net/gnrc/pkt.h"
 #include "net/gnrc/pktbuf.h"
 
@@ -195,7 +196,9 @@ static inline void gnrc_netif_hdr_set_dst_addr(gnrc_netif_hdr_t *hdr, uint8_t *a
  * @return  The generic network layer header on success.
  * @return  NULL on error.
  */
-gnrc_pktsnip_t *gnrc_netif_hdr_build(uint8_t *src, uint8_t src_len, uint8_t *dst, uint8_t dst_len);
+gnrc_pktsnip_t *gnrc_netif_hdr_build(uint8_t *src acount(src_len), uint8_t src_len,
+                                     uint8_t *dst acount(dst_len), uint8_t dst_len)
+    atype(ptr(gnrc_pktsnip_t));
 
 /**
  * @brief   Outputs a generic interface header to stdout.
