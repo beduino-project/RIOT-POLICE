@@ -22,9 +22,14 @@
 
 #include <inttypes.h>
 
+#include "checkedc.h"
 #include "byteorder.h"
 #include "net/gnrc/netif.h"
 #include "net/ipv6/hdr.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,7 +49,8 @@ extern "C" {
  * @return  NULL, on failure
  */
 gnrc_pktsnip_t *gnrc_icmpv6_echo_build(uint8_t type, uint16_t id, uint16_t seq,
-                                       uint8_t *data, size_t data_len);
+                                       uint8_t *data acount(data_len), size_t data_len)
+    atype(ptr(gnrc_pktsnip_t));
 
 /**
  * @brief   ICMPv6 echo request handler
@@ -55,11 +61,17 @@ gnrc_pktsnip_t *gnrc_icmpv6_echo_build(uint8_t type, uint16_t id, uint16_t seq,
  * @param[in] len       Length of the echo request message (ipv6_hdr_t::len
  *                      of @p ipv6_hdr minus length of extension headers).
  */
-void gnrc_icmpv6_echo_req_handle(gnrc_netif_t *netif, ipv6_hdr_t *ipv6_hdr,
-                                 icmpv6_echo_t *echo, uint16_t len);
+void gnrc_icmpv6_echo_req_handle(gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+                                 ipv6_hdr_t *ipv6_hdr atype(ptr(ipv6_hdr_t)),
+                                 icmpv6_echo_t *echo abyte_count(len + sizeof(icmpv6_echo_t)),
+                                 uint16_t len);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_ICMPV6_ECHO_H */
