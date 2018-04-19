@@ -20,6 +20,7 @@
 
 #include <assert.h>
 
+#include "checkedc.h"
 #include "evtimer_msg.h"
 #include "net/ipv6/addr.h"
 #ifdef MODULE_GNRC_IPV6_NIB
@@ -29,6 +30,10 @@
 #include "net/gnrc/netif/conf.h"
 #ifdef MODULE_NETSTATS_IPV6
 #include "net/netstats.h"
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
 #endif
 
 #ifdef __cplusplus
@@ -83,21 +88,24 @@ typedef struct {
      *
      * @note    Only available with module @ref net_gnrc_ipv6 "gnrc_ipv6".
      */
-    uint8_t addrs_flags[GNRC_NETIF_IPV6_ADDRS_NUMOF];
+    uint8_t addrs_flags[GNRC_NETIF_IPV6_ADDRS_NUMOF]
+        atype(uint8_t checked[GNRC_NETIF_IPV6_ADDRS_NUMOF]);
 
     /**
      * @brief   IPv6 unicast and anycast addresses of the interface
      *
      * @note    Only available with module @ref net_gnrc_ipv6 "gnrc_ipv6".
      */
-    ipv6_addr_t addrs[GNRC_NETIF_IPV6_ADDRS_NUMOF];
+    ipv6_addr_t addrs[GNRC_NETIF_IPV6_ADDRS_NUMOF]
+        atype(ipv6_addr_t checked[GNRC_NETIF_IPV6_ADDRS_NUMOF]);
 
     /**
      * @brief   IPv6 multicast groups of the interface
      *
      * @note    Only available with module @ref net_gnrc_ipv6 "gnrc_ipv6".
      */
-    ipv6_addr_t groups[GNRC_NETIF_IPV6_GROUPS_NUMOF];
+    ipv6_addr_t groups[GNRC_NETIF_IPV6_GROUPS_NUMOF]
+        atype(ipv6_addr_t checked[GNRC_NETIF_IPV6_GROUPS_NUMOF]);
 #ifdef MODULE_NETSTATS_IPV6
     /**
      * @brief IPv6 packet statistics
@@ -123,8 +131,10 @@ typedef struct {
      * @param[in] ctx_addr  Context address of the route info.
      * @param[in] ctx       Further context of the route info.
      */
-    void (*route_info_cb)(unsigned type, const ipv6_addr_t *ctx_addr,
-                          const void *ctx);
+    checked_fn(void,, route_info_cb, unsigned type,
+               const ipv6_addr_t *ctx_addr atype(ptr(const ipv6_addr_t)),
+               const void *ctx atype(ptr(const void)));
+
     /**
      * @brief   Event for @ref GNRC_IPV6_NIB_SND_MC_RA
      *
@@ -161,7 +171,8 @@ typedef struct {
      * @note    Might also be usable in the later default SLAAC implementation
      *          for NS retransmission timers.
      */
-    evtimer_msg_event_t addrs_timers[GNRC_NETIF_IPV6_ADDRS_NUMOF];
+    evtimer_msg_event_t addrs_timers[GNRC_NETIF_IPV6_ADDRS_NUMOF]
+        atype(evtimer_msg_event_t checked[GNRC_NETIF_IPV6_ADDRS_NUMOF]);
 #endif
 
 #if GNRC_IPV6_NIB_CONF_ROUTER || DOXYGEN
@@ -258,6 +269,10 @@ typedef struct {
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_NETIF_IPV6_H */
