@@ -23,10 +23,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "checkedc.h"
 #include "net/eui64.h"
 #include "net/gnrc/netif/hdr.h"
 #include "net/gnrc/ipv6/nib/conf.h"
 #include "net/ipv6/addr.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -144,7 +149,8 @@ typedef struct {
     /**
      * @brief   Neighbor's link-layer address
      */
-    uint8_t l2addr[GNRC_IPV6_NIB_L2ADDR_MAX_LEN];
+    uint8_t l2addr[GNRC_IPV6_NIB_L2ADDR_MAX_LEN]
+        atype(uint8_t checked[GNRC_IPV6_NIB_L2ADDR_MAX_LEN]);
     /**
      * @brief   Neighbor information as defined in
      *          @ref net_gnrc_ipv6_nib_nc_info "info values"
@@ -160,7 +166,7 @@ typedef struct {
  *
  * @return  The neighbor unreachability state of @p entry.
  */
-static inline unsigned gnrc_ipv6_nib_nc_get_nud_state(const gnrc_ipv6_nib_nc_t *entry)
+static inline unsigned gnrc_ipv6_nib_nc_get_nud_state(const gnrc_ipv6_nib_nc_t *entry atype(ptr(const gnrc_ipv6_nib_nc_t)))
 {
     return (entry->info & GNRC_IPV6_NIB_NC_INFO_NUD_STATE_MASK);
 }
@@ -173,7 +179,7 @@ static inline unsigned gnrc_ipv6_nib_nc_get_nud_state(const gnrc_ipv6_nib_nc_t *
  * @return  true, if @p entry is a router.
  * @return  false, if @p entry is not a router.
  */
-static inline bool gnrc_ipv6_nib_nc_is_router(const gnrc_ipv6_nib_nc_t *entry)
+static inline bool gnrc_ipv6_nib_nc_is_router(const gnrc_ipv6_nib_nc_t *entry atype(ptr(const gnrc_ipv6_nib_nc_t)))
 {
     return (entry->info & GNRC_IPV6_NIB_NC_INFO_IS_ROUTER);
 }
@@ -186,7 +192,7 @@ static inline bool gnrc_ipv6_nib_nc_is_router(const gnrc_ipv6_nib_nc_t *entry)
  * @return  The interface identifier of @p entry.
  * @return  0 if no interface is identified for @p entry.
  */
-static inline unsigned gnrc_ipv6_nib_nc_get_iface(const gnrc_ipv6_nib_nc_t *entry)
+static inline unsigned gnrc_ipv6_nib_nc_get_iface(const gnrc_ipv6_nib_nc_t *entry atype(ptr(const gnrc_ipv6_nib_nc_t)))
 {
     return (entry->info & GNRC_IPV6_NIB_NC_INFO_IFACE_MASK) >>
            GNRC_IPV6_NIB_NC_INFO_IFACE_POS;
@@ -199,7 +205,7 @@ static inline unsigned gnrc_ipv6_nib_nc_get_iface(const gnrc_ipv6_nib_nc_t *entr
  *
  * @return  The address registration state of @p entry.
  */
-static inline unsigned gnrc_ipv6_nib_nc_get_ar_state(const gnrc_ipv6_nib_nc_t *entry)
+static inline unsigned gnrc_ipv6_nib_nc_get_ar_state(const gnrc_ipv6_nib_nc_t *entry atype(ptr(const gnrc_ipv6_nib_nc_t)))
 {
     return (entry->info & GNRC_IPV6_NIB_NC_INFO_AR_STATE_MASK);
 }
@@ -227,8 +233,8 @@ static inline unsigned gnrc_ipv6_nib_nc_get_ar_state(const gnrc_ipv6_nib_nc_t *e
  * @return  0 on success.
  * @return  -ENOMEM, if no space is left in neighbor cache.
  */
-int gnrc_ipv6_nib_nc_set(const ipv6_addr_t *ipv6, unsigned iface,
-                         const uint8_t *l2addr, size_t l2addr_len);
+int gnrc_ipv6_nib_nc_set(const ipv6_addr_t *ipv6 atype(ptr(const ipv6_addr_t)), unsigned iface,
+                         const uint8_t *l2addr acount(l2addr_len), size_t l2addr_len);
 
 /**
  * @brief   Deletes neighbor with address @p ipv6 from NIB
@@ -240,7 +246,7 @@ int gnrc_ipv6_nib_nc_set(const ipv6_addr_t *ipv6, unsigned iface,
  *
  * If the @p ipv6 can't be found for a neighbor in the NIB nothing happens.
  */
-void gnrc_ipv6_nib_nc_del(const ipv6_addr_t *ipv6, unsigned iface);
+void gnrc_ipv6_nib_nc_del(const ipv6_addr_t *ipv6 atype(ptr(const ipv6_addr_t)), unsigned iface);
 
 /**
  * @brief   Mark neighbor with address @p ipv6 as reachable
@@ -259,7 +265,7 @@ void gnrc_ipv6_nib_nc_del(const ipv6_addr_t *ipv6, unsigned iface);
  * affected by this, since they are assumed to always be reachable and kept out
  * of the NUD state-machine
  */
-void gnrc_ipv6_nib_nc_mark_reachable(const ipv6_addr_t *ipv6);
+void gnrc_ipv6_nib_nc_mark_reachable(const ipv6_addr_t *ipv6 atype(ptr(const ipv6_addr_t)));
 
 /**
  * @brief   Iterates over all neighbor cache entries in the NIB
@@ -294,8 +300,8 @@ void gnrc_ipv6_nib_nc_mark_reachable(const ipv6_addr_t *ipv6);
  * @return  true, if iteration can be continued.
  * @return  false, if @p nce is the last neighbor cache entry in the NIB.
  */
-bool gnrc_ipv6_nib_nc_iter(unsigned iface, void **state,
-                           gnrc_ipv6_nib_nc_t *nce);
+bool gnrc_ipv6_nib_nc_iter(unsigned iface, void **state atype(ptr(ptr(void))),
+                           gnrc_ipv6_nib_nc_t *nce atype(ptr(gnrc_ipv6_nib_nc_t)));
 
 /**
  * @brief   Prints a neighbor cache entry
@@ -304,10 +310,14 @@ bool gnrc_ipv6_nib_nc_iter(unsigned iface, void **state,
  *
  * @param[in] nce   A neighbor cache entry.
  */
-void gnrc_ipv6_nib_nc_print(gnrc_ipv6_nib_nc_t *nce);
+void gnrc_ipv6_nib_nc_print(gnrc_ipv6_nib_nc_t *nce atype(ptr(gnrc_ipv6_nib_nc_t)));
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_GNRC_IPV6_NIB_NC_H */
