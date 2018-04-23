@@ -174,8 +174,8 @@
 /**
  * @brief Prototype for a thread entry function
  */
-typedef void *(thread_task_func_t)(void *arg atype(ptr(void)))
-    atype(ptr(void));
+typedef checked_fn(void *, atype(_Ptr<void>), thread_task_func_t,
+                   void *arg atype(ptr(void)));
 
 /**
  * @brief @c thread_t holds thread's context data.
@@ -351,7 +351,7 @@ kernel_pid_t thread_create(char *stack acount(stacksize),
                   int stacksize,
                   char priority,
                   int flags,
-                  thread_task_func_t *task_func atype(ptr(thread_task_func_t)),
+                  thread_task_func_t task_func,
                   void *arg atype(ptr(void)),
                   const char *name atype(nt_array_ptr(const char)));
 
@@ -438,7 +438,7 @@ static inline kernel_pid_t thread_getpid(void)
  *
  * @return stack pointer
  */
-char *thread_stack_init(thread_task_func_t *task_func atype(ptr(thread_task_func_t)),
+char *thread_stack_init(thread_task_func_t task_func,
                         void *arg atype(ptr(void)),
                         void *stack_start abyte_count(stack_size),
                         int stack_size)
