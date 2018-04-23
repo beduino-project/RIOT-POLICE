@@ -167,6 +167,19 @@
 #endif
 
 /**
+ * @def checked_fn
+ *
+ * @brief Declare a function pointer with the return type @p r
+ *        annotated using @p a, the name @p n and the given
+ *        additional parameters as function parameters.
+ */
+#ifdef USE_CHECKEDC
+#define checked_fn(r, a, n, ...) _Ptr<r (__VA_ARGS__) a> n
+#else
+#define checked_fn(r, a, n, ...) r (*n)(__VA_ARGS__)
+#endif
+
+/**
  * @def nt_array_ptr
  *
  * @brief Declare a pointer to an element of a null-terminated
