@@ -27,8 +27,13 @@
 
 #include <stdint.h>
 
+#include "checkedc.h"
 #include "net/fib/table.h"
 #include "kernel_types.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,9 +43,9 @@ extern "C" {
  * @brief Routing Protocol (RP) message content to request/reply notification
  */
 typedef struct {
-    uint8_t *address;      /**< The pointer to the address */
-    uint8_t address_size;  /**< The address size */
-    uint32_t address_flags; /**< The flags for the given address */
+    uint8_t *address acount(address_size); /**< The pointer to the address */
+    uint8_t address_size;                  /**< The address size */
+    uint32_t address_flags;                /**< The flags for the given address */
 } rp_address_msg_t;
 
 /**
@@ -63,8 +68,9 @@ typedef struct {
  * @brief entry used to collect available destinations
  */
 typedef struct {
-    uint8_t dest[UNIVERSAL_ADDRESS_SIZE]; /**< The destination address */
-    size_t dest_size;    /**< The destination address size */
+    uint8_t dest[UNIVERSAL_ADDRESS_SIZE]
+        atype(uint8_t checked[UNIVERSAL_ADDRESS_SIZE]); /**< The destination address */
+    size_t dest_size;                                   /**< The destination address size */
 } fib_destination_set_entry_t;
 
 /**
@@ -92,14 +98,14 @@ typedef struct {
  *
  * @param[in] table         the fib instance to initialize
  */
-void fib_init(fib_table_t *table);
+void fib_init(fib_table_t *table atype(ptr(fib_table_t)));
 
 /**
  * @brief de-initializes the FIB entries and source route entries
  *
  * @param[in] table     the fib instance to de-initialize
  */
-void fib_deinit(fib_table_t *table);
+void fib_deinit(fib_table_t *table atype(ptr(fib_table_t)));
 
 /**
  * @brief Registration of a routing protocol handler function
@@ -113,7 +119,9 @@ void fib_deinit(fib_table_t *table);
  *           -EINVAL if the prefix is NULL or the provided size is 0
  *
  */
-int fib_register_rp(fib_table_t *table, uint8_t *prefix, size_t prefix_addr_type_size);
+int fib_register_rp(fib_table_t *table atype(ptr(fib_table_t)),
+                    uint8_t *prefix acount(prefix_addr_type_size),
+                    size_t prefix_addr_type_size);
 
 /**
  * @brief Adds a new entry in the corresponding FIB table for global destination and next hop
@@ -132,10 +140,10 @@ int fib_register_rp(fib_table_t *table, uint8_t *prefix, size_t prefix_addr_type
  *         -ENOMEM if the entry cannot be created due to insufficient RAM
  *         -EFAULT if dst and/or next_hop is not a valid pointer
  */
-int fib_add_entry(fib_table_t *table, kernel_pid_t iface_id, uint8_t *dst,
-                  size_t dst_size, uint32_t dst_flags, uint8_t *next_hop,
-                  size_t next_hop_size, uint32_t next_hop_flags,
-                  uint32_t lifetime);
+int fib_add_entry(fib_table_t *table atype(ptr(fib_table_t)), kernel_pid_t iface_id,
+                  uint8_t *dst acount(dst_size), size_t dst_size, uint32_t dst_flags,
+                  uint8_t *next_hop acount(next_hop_size), size_t next_hop_size,
+                  uint32_t next_hop_flags, uint32_t lifetime);
 
 /**
  * @brief Updates an entry in the FIB table with next hop and lifetime
@@ -152,9 +160,9 @@ int fib_add_entry(fib_table_t *table, kernel_pid_t iface_id, uint8_t *dst,
  *         -ENOMEM if the entry cannot be updated due to insufficient RAM
  *         -EFAULT if dst and/or next_hop is not a valid pointer
  */
-int fib_update_entry(fib_table_t *table, uint8_t *dst, size_t dst_size,
-                     uint8_t *next_hop, size_t next_hop_size,
-                     uint32_t next_hop_flags, uint32_t lifetime);
+int fib_update_entry(fib_table_t *table atype(ptr(fib_table_t)), uint8_t *dst acount(dst_size),
+                     size_t dst_size, uint8_t *next_hop acount(next_hop_size),
+                     size_t next_hop_size, uint32_t next_hop_flags, uint32_t lifetime);
 
 /**
  * @brief removes an entry from the corresponding FIB table
@@ -163,7 +171,8 @@ int fib_update_entry(fib_table_t *table, uint8_t *dst, size_t dst_size,
  * @param[in] dst           the destination address
  * @param[in] dst_size      the destination address size
  */
-void fib_remove_entry(fib_table_t *table, uint8_t *dst, size_t dst_size);
+void fib_remove_entry(fib_table_t *table atype(ptr(fib_table_t)),
+                      uint8_t *dst acount(dst_size), size_t dst_size);
 
 /**
  * @brief removes all entries from the corresponding FIB table and interface combination
@@ -174,7 +183,7 @@ void fib_remove_entry(fib_table_t *table, uint8_t *dst, size_t dst_size);
  * @param[in] table         the fib table to flush
  * @param[in] interface     entries associated with this interface will be removed
  */
-void fib_flush(fib_table_t *table, kernel_pid_t interface);
+void fib_flush(fib_table_t *table atype(ptr(fib_table_t)), kernel_pid_t interface);
 
 /**
  * @brief provides a next hop for a given destination
@@ -196,9 +205,12 @@ void fib_flush(fib_table_t *table, kernel_pid_t interface);
  *         -EFAULT if dst and/or next_hop is not a valid pointer
  *         -EINVAL if one of the other passed out pointers is NULL
  */
-int fib_get_next_hop(fib_table_t *table, kernel_pid_t *iface_id,
-                     uint8_t *next_hop, size_t *next_hop_size,
-                     uint32_t* next_hop_flags, uint8_t *dst, size_t dst_size,
+int fib_get_next_hop(fib_table_t *table atype(ptr(fib_table_t)),
+                     kernel_pid_t *iface_id atype(ptr(kernel_pid_t)),
+                     uint8_t *next_hop atype(ptr(uint8_t)),
+                     size_t *next_hop_size atype(ptr(size_t)),
+                     uint32_t* next_hop_flags atype(ptr(uint32_t)),
+                     uint8_t *dst acount(dst_size), size_t dst_size,
                      uint32_t dst_flags);
 
 /**
@@ -220,10 +232,11 @@ int fib_get_next_hop(fib_table_t *table, kernel_pid_t *iface_id,
 *                  The actual needed size is stored then in dst_set_size,
 *                  however the required size may change in between calls.
 */
-int fib_get_destination_set(fib_table_t *table, uint8_t *prefix,
+int fib_get_destination_set(fib_table_t *table atype(ptr(fib_table_t)),
+                            uint8_t *prefix acount(prefix_size),
                             size_t prefix_size,
-                            fib_destination_set_entry_t *dst_set,
-                            size_t *dst_set_size);
+                            fib_destination_set_entry_t *dst_set atype(ptr(fib_destination_set_entry_t)),
+                            size_t *dst_set_size atype(ptr(size_t)));
 
 /**
 * @brief creates a new source route
@@ -238,8 +251,10 @@ int fib_get_destination_set(fib_table_t *table, uint8_t *prefix,
 *         -EFAULT on wrong parameters, i.e. fib_sr is NULL and/or sr_lifetime is 0
 *         -ENOBUFS on insufficient memory, i.e. all source route fields are in use
 */
-int fib_sr_create(fib_table_t *table, fib_sr_t **fib_sr, kernel_pid_t sr_iface_id,
-                  uint32_t sr_flags, uint32_t sr_lifetime);
+int fib_sr_create(fib_table_t *table atype(ptr(fib_table_t)),
+                  fib_sr_t **fib_sr atype(ptr(ptr(fib_sr_t))),
+                  kernel_pid_t sr_iface_id, uint32_t sr_flags,
+                  uint32_t sr_lifetime);
 
 /**
 * @brief reads the information from the sr head to the given locations
@@ -254,8 +269,11 @@ int fib_sr_create(fib_table_t *table, fib_sr_t **fib_sr, kernel_pid_t sr_iface_i
 *         -ENOENT on expired lifetime of the source route
 *         -EFAULT on fib_sr is NULL
 */
-int fib_sr_read_head(fib_table_t *table, fib_sr_t *fib_sr, kernel_pid_t *sr_iface_id,
-                     uint32_t *sr_flags, uint32_t *sr_lifetime);
+int fib_sr_read_head(fib_table_t *table atype(ptr(fib_table_t)),
+                     fib_sr_t *fib_sr atype(ptr(fib_sr_t)),
+                     kernel_pid_t *sr_iface_id atype(ptr(kernel_pid_t)),
+                     uint32_t *sr_flags atype(ptr(uint32_t)),
+                     uint32_t *sr_lifetime atype(ptr(uint32_t)));
 
 /**
 * @brief reads the destination address from the sr head to the given location
@@ -271,8 +289,10 @@ int fib_sr_read_head(fib_table_t *table, fib_sr_t *fib_sr, kernel_pid_t *sr_ifac
 *         -ENOBUFS if the size to store the destination is insufficient low
 *         -EHOSTUNREACH on the destination address is not set
 */
-int fib_sr_read_destination(fib_table_t *table, fib_sr_t *fib_sr,
-                            uint8_t *dst, size_t *dst_size);
+int fib_sr_read_destination(fib_table_t *table atype(ptr(fib_table_t)),
+                            fib_sr_t *fib_sr atype(ptr(fib_sr_t)),
+                            uint8_t *dst atype(ptr(uint8_t)),
+                            size_t *dst_size atype(ptr(size_t)));
 
 /**
 * @brief sets the provided parameters in the given sr header if a given parameter
@@ -288,8 +308,11 @@ int fib_sr_read_destination(fib_table_t *table, fib_sr_t *fib_sr,
 *         -ENOENT on expired lifetime of the source route
 *         -EFAULT on passed fib_sr is NULL
 */
-int fib_sr_set(fib_table_t *table, fib_sr_t *fib_sr, kernel_pid_t *sr_iface_id,
-               uint32_t *sr_flags, uint32_t *sr_lifetime);
+int fib_sr_set(fib_table_t *table atype(ptr(fib_table_t)),
+               fib_sr_t *fib_sr atype(ptr(fib_sr_t)),
+               kernel_pid_t *sr_iface_id atype(ptr(kernel_pid_t)),
+               uint32_t *sr_flags atype(ptr(uint32_t)),
+               uint32_t *sr_lifetime atype(ptr(uint32_t)));
 
 /**
 * @brief deletes the sr
@@ -300,7 +323,8 @@ int fib_sr_set(fib_table_t *table, fib_sr_t *fib_sr, kernel_pid_t *sr_iface_id,
 * @return 0 on success
 *         -EFAULT on fib_sr pointer is NULL
 */
-int fib_sr_delete(fib_table_t *table, fib_sr_t *fib_sr);
+int fib_sr_delete(fib_table_t *table atype(ptr(fib_table_t)),
+                  fib_sr_t *fib_sr atype(ptr(fib_sr_t)));
 
 /**
 * @brief iterates to the next entry in the sr_path
@@ -314,7 +338,9 @@ int fib_sr_delete(fib_table_t *table, fib_sr_t *fib_sr);
 *         -ENOENT on expired lifetime of the source route
 *         -EFAULT on fib_sr and/or sr_path_entry is NULL
 */
-int fib_sr_next(fib_table_t *table, fib_sr_t *fib_sr, fib_sr_entry_t **sr_path_entry);
+int fib_sr_next(fib_table_t *table atype(ptr(fib_table_t)),
+                fib_sr_t *fib_sr atype(ptr(fib_sr_t)),
+                fib_sr_entry_t **sr_path_entry atype(ptr(ptr(fib_sr_entry_t))));
 
 /**
 * @brief searches the entry containing the given address
@@ -330,8 +356,10 @@ int fib_sr_next(fib_table_t *table, fib_sr_t *fib_sr, fib_sr_entry_t **sr_path_e
 *         -ENOENT on expired lifetime of the source route
 *         -EFAULT on one of the given parameter pointer is NULL
 */
-int fib_sr_search(fib_table_t *table, fib_sr_t *fib_sr, uint8_t *addr, size_t addr_size,
-                  fib_sr_entry_t **sr_path_entry);
+int fib_sr_search(fib_table_t *table atype(ptr(fib_table_t)),
+                  fib_sr_t *fib_sr atype(ptr(fib_sr_t)),
+                  uint8_t *addr acount(addr_size), size_t addr_size,
+                  fib_sr_entry_t **sr_path_entry atype(ptr(ptr(fib_sr_entry_t))));
 
 /**
 * @brief append a new entry at the end of the source route, i.e. a new destination
@@ -346,8 +374,9 @@ int fib_sr_search(fib_table_t *table, fib_sr_t *fib_sr, uint8_t *addr, size_t ad
 *         -ENOENT on expired lifetime of the source route
 *         -EFAULT on fib_sr and/or dst is NULL
 */
-int fib_sr_entry_append(fib_table_t *table, fib_sr_t *fib_sr,
-                        uint8_t *dst, size_t dst_size);
+int fib_sr_entry_append(fib_table_t *table atype(ptr(fib_table_t)),
+                        fib_sr_t *fib_sr atype(ptr(fib_sr_t)),
+                        uint8_t *dst acount(dst_size), size_t dst_size);
 
 /**
 * @brief adds a new entry behind a given sr entry
@@ -365,8 +394,10 @@ int fib_sr_entry_append(fib_table_t *table, fib_sr_t *fib_sr,
 *         -ENOENT on expired lifetime of the source route
 *         -EINVAL on the given address is already present in the path
 */
-int fib_sr_entry_add(fib_table_t *table, fib_sr_t *fib_sr,
-                     fib_sr_entry_t *sr_path_entry, uint8_t *addr, size_t addr_size,
+int fib_sr_entry_add(fib_table_t *table atype(ptr(fib_table_t)),
+                     fib_sr_t *fib_sr atype(ptr(fib_sr_t)),
+                     fib_sr_entry_t *sr_path_entry atype(ptr(fib_sr_entry_t)),
+                     uint8_t *addr acount(addr_size), size_t addr_size,
                      bool keep_remaining_route);
 
 /**
@@ -383,7 +414,9 @@ int fib_sr_entry_add(fib_table_t *table, fib_sr_t *fib_sr,
 *         -EFAULT on one of the passed pointers is NULL
 *         -ENOENT on expired lifetime of the source route
 */
-int fib_sr_entry_delete(fib_table_t *table, fib_sr_t *fib_sr, uint8_t *addr, size_t addr_size,
+int fib_sr_entry_delete(fib_table_t *table atype(ptr(fib_table_t)),
+                        fib_sr_t *fib_sr atype(ptr(fib_sr_t)),
+                        uint8_t *addr acount(addr_size), size_t addr_size,
                         bool keep_remaining_route);
 
 /**
@@ -402,9 +435,10 @@ int fib_sr_entry_delete(fib_table_t *table, fib_sr_t *fib_sr, uint8_t *addr, siz
 *         -EFAULT on one of the passed pointers is NULL
 *         -ENOENT on expired lifetime of the source route
 */
-int fib_sr_entry_overwrite(fib_table_t *table, fib_sr_t *fib_sr,
-                           uint8_t *addr_old, size_t addr_old_size,
-                           uint8_t *addr_new, size_t addr_new_size);
+int fib_sr_entry_overwrite(fib_table_t *table atype(ptr(fib_table_t)),
+                           fib_sr_t *fib_sr atype(ptr(fib_sr_t)),
+                           uint8_t *addr_old acount(addr_old_size), size_t addr_old_size,
+                           uint8_t *addr_new acount(addr_new_size), size_t addr_new_size);
 
 /**
 * @brief writes the address of an entry to the given out pointers
@@ -420,8 +454,11 @@ int fib_sr_entry_overwrite(fib_table_t *table, fib_sr_t *fib_sr,
 *         -EFAULT on one of the passed pointers is NULL
 *         -ENOENT on expired lifetime of the source route
 */
-int fib_sr_entry_get_address(fib_table_t *table, fib_sr_t *fib_sr, fib_sr_entry_t *sr_path_entry,
-                             uint8_t *addr, size_t *addr_size);
+int fib_sr_entry_get_address(fib_table_t *table atype(ptr(fib_table_t)),
+                             fib_sr_t *fib_sr atype(ptr(fib_sr_t)),
+                             fib_sr_entry_t *sr_path_entry atype(ptr(fib_sr_entry_t)),
+                             uint8_t *addr atype(ptr(uint8_t)),
+                             size_t *addr_size atype(ptr(size_t)));
 
 
 /**
@@ -453,17 +490,22 @@ int fib_sr_entry_get_address(fib_table_t *table, fib_sr_t *fib_sr, fib_sr_entry_
 *         -EHOSTUNREACH if no sr for the destination exists in the FIB
 *         -ENOBUFS if the size to store all hops is insufficient low
 */
-int fib_sr_get_route(fib_table_t *table, uint8_t *dst, size_t dst_size, kernel_pid_t *sr_iface_id,
-                     uint32_t *sr_flags,
-                     uint8_t *addr_list, size_t *addr_list_size, size_t *element_size,
-                     bool reverse, fib_sr_t **fib_sr);
+int fib_sr_get_route(fib_table_t *table atype(ptr(fib_table_t)),
+                     uint8_t *dst acount(dst_size), size_t dst_size,
+                     kernel_pid_t *sr_iface_id atype(ptr(kernel_pid_t)),
+                     uint32_t *sr_flags atype(ptr(uint32_t)),
+                     uint8_t *addr_list atype(ptr(uint8_t)),
+                     size_t *addr_list_size atype(ptr(size_t)),
+                     size_t *element_size atype(ptr(size_t)),
+                     bool reverse,
+                     fib_sr_t **fib_sr atype(ptr(ptr(fib_sr_t))));
 
 /**
  * @brief returns the actual number of used FIB entries
  *
  * @param[in] table         the fib instance to check
  */
-int fib_get_num_used_entries(fib_table_t *table);
+int fib_get_num_used_entries(fib_table_t *table atype(ptr(fib_table_t)));
 
 /**
  * @brief Prints the kernel_pid_t for all registered RRPs
@@ -475,14 +517,14 @@ void fib_print_notify_rrp(void);
  *
  * @param[in] table         the fib instance to print
  */
-void fib_print_fib_table(fib_table_t *table);
+void fib_print_fib_table(fib_table_t *table atype(ptr(fib_table_t)));
 
 /**
  * @brief Prints the FIB content
  *
  * @param[in] table         the fib instance to print
  */
-void fib_print_routes(fib_table_t *table);
+void fib_print_routes(fib_table_t *table atype(ptr(fib_table_t)));
 
 /**
 * @brief Prints the given FIB sourceroute
@@ -490,7 +532,8 @@ void fib_print_routes(fib_table_t *table);
 * @param[in] table the fib instance to print
 * @param [in] sr the source route to print
 */
-void fib_print_sr(fib_table_t *table, fib_sr_t *sr);
+void fib_print_sr(fib_table_t *table atype(ptr(fib_table_t)),
+                  fib_sr_t *sr atype(ptr(fib_sr_t)));
 
 #if FIB_DEVEL_HELPER
 /**
@@ -504,13 +547,18 @@ void fib_print_sr(fib_table_t *table, fib_sr_t *sr);
  * @return 0             on success: entry for dst found and lifetime copied
  *         -EHOSTUNREACH if no fitting entry is available
  */
-int fib_devel_get_lifetime(fib_table_t *table, uint64_t *lifetime, uint8_t *dst,
-                           size_t dst_size);
+int fib_devel_get_lifetime(fib_table_t *table atype(ptr(fib_table_t)),
+                           uint64_t *lifetime atype(ptr(uint64_t)),
+                           uint8_t *dst acount(dst_size), size_t dst_size);
 
 #endif
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_FIB_H */
