@@ -21,9 +21,14 @@
 
 #include <stdint.h>
 
+#include "checkedc.h"
 #include "kernel_types.h"
 #include "universal_address.h"
 #include "mutex.h"
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED ON
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,11 +51,13 @@ typedef struct {
     /** Unique identifier for the type of the global address */
     uint32_t global_flags;
     /** Pointer to the shared generic address */
-    universal_address_container_t *global;
+    universal_address_container_t *global
+        atype(ptr(universal_address_container_t));
     /** Unique identifier for the type of the next hop address */
     uint32_t next_hop_flags;
     /** Pointer to the shared generic address */
-    universal_address_container_t *next_hop;
+    universal_address_container_t *next_hop
+        atype(ptr(universal_address_container_t));
 } fib_entry_t;
 
 /**
@@ -58,9 +65,11 @@ typedef struct {
 */
 typedef struct fib_sr_entry {
     /** Pointer to the shared generic address */
-    universal_address_container_t *address;
+    universal_address_container_t *address
+        atype(ptr(universal_address_container_t));
     /** Pointer to the next shared generic address on the source route */
-    struct fib_sr_entry *next;
+    struct fib_sr_entry *next
+        atype(ptr(struct fib_sr_entry));
 } fib_sr_entry_t;
 
 /**
@@ -74,9 +83,11 @@ typedef struct {
     /** Flags for this source route */
     uint32_t sr_flags;
     /** Pointer to the first hop on the source route */
-    fib_sr_entry_t *sr_path;
+    fib_sr_entry_t *sr_path
+        atype(ptr(fib_sr_entry_t));
     /** Pointer to the destination of the source route */
-    fib_sr_entry_t *sr_dest;
+    fib_sr_entry_t *sr_dest
+        atype(ptr(fib_sr_entry_t));
 } fib_sr_t;
 
 /**
@@ -85,9 +96,11 @@ typedef struct {
 */
 typedef struct {
     /** pointer to source route header array */
-    fib_sr_t *headers;
+    fib_sr_t *headers
+        atype(ptr(fib_sr_t));
     /** pointer to entry pool array holding all hop entries for this table */
-    fib_sr_entry_t *entry_pool;
+    fib_sr_entry_t *entry_pool
+        acount(entry_pool_size);
     /** the maximum number of elements in the entry pool */
     size_t entry_pool_size;
 } fib_sr_meta_t;
@@ -109,9 +122,11 @@ typedef struct {
     /** A single hop OR source route data array */
     union{
         /** array holding the FIB entries for single hops */
-        fib_entry_t *entries;
+        fib_entry_t *entries
+            atype(ptr(fib_entry_t));
         /** array holding the FIB entries for source routes */
-        fib_sr_meta_t *source_routes;
+        fib_sr_meta_t *source_routes
+            atype(ptr(fib_sr_meta_t));
     }data;
     /** the kind of this FIB table, single hop or source route.
     *   This value indicates what is stored in `data` of this table
@@ -127,16 +142,22 @@ typedef struct {
     *   Used to notify the RPs by the FIB on certain conditions,
     *   e.g. when a destination is unreachable
     */
-    kernel_pid_t notify_rp[FIB_MAX_REGISTERED_RP];
+    kernel_pid_t notify_rp[FIB_MAX_REGISTERED_RP]
+        atype(kernel_pid_t checked[FIB_MAX_REGISTERED_RP]);
     /** the prefix handled by each registered RP.
     *   Used to dispatch if the RP is responsible for the condition,
     *   e.g. when the unreachable destination is covered by the prefix
     */
-    universal_address_container_t* prefix_rp[FIB_MAX_REGISTERED_RP];
+    universal_address_container_t* prefix_rp[FIB_MAX_REGISTERED_RP]
+        atype(ptr(universal_address_container_t) checked[FIB_MAX_REGISTERED_RP]);
 } fib_table_t;
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef USE_CHECKEDC
+#pragma BOUNDS_CHECKED OFF
 #endif
 
 #endif /* NET_FIB_TABLE_H */
