@@ -89,9 +89,9 @@ void gnrc_netreg_unregister(gnrc_nettype_t type,
  * @return  The first entry fitting the given parameters on success
  * @return  NULL if no entry can be found.
  */
-static gnrc_netreg_entry_t *_netreg_lookup(gnrc_netreg_entry_t *from,
-                                           gnrc_nettype_t type,
-                                           uint32_t demux_ctx)
+static ptr(gnrc_netreg_entry_t) _netreg_lookup(ptr(gnrc_netreg_entry_t) from,
+                                               gnrc_nettype_t type,
+                                               uint32_t demux_ctx)
 {
     ptr(gnrc_netreg_entry_t) res = NULL;
 
@@ -104,6 +104,7 @@ static gnrc_netreg_entry_t *_netreg_lookup(gnrc_netreg_entry_t *from,
 }
 
 gnrc_netreg_entry_t *gnrc_netreg_lookup(gnrc_nettype_t type, uint32_t demux_ctx)
+    atype(ptr(gnrc_netreg_entry_t))
 {
     return _netreg_lookup(NULL, type, demux_ctx);
 }
