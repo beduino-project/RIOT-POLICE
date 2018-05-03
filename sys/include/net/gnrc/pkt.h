@@ -112,19 +112,19 @@ extern "C" {
 typedef struct gnrc_pktsnip {
     /* the first three fields *MUST* match iolist_t! */
     struct gnrc_pktsnip *next
-        atype(ptr(struct gnrc_pktsnip_t)); /**< next snip in the packet */
-    void *data abyte_count(size);          /**< pointer to the data of the snip */
-    size_t size;                           /**< the length of the snip in byte */
+        atype(ptr(struct gnrc_pktsnip)); /**< next snip in the packet */
+    void *data abyte_count(size);        /**< pointer to the data of the snip */
+    size_t size;                         /**< the length of the snip in byte */
     /**
      * @brief   Counter of threads currently having control over this packet.
      *
      * @internal
      */
     unsigned int users;
-    gnrc_nettype_t type;                   /**< protocol of the packet snip */
+    gnrc_nettype_t type;                 /**< protocol of the packet snip */
 #ifdef MODULE_GNRC_NETERR
-    kernel_pid_t err_sub;                  /**< subscriber to errors related to this
-                                            *   packet snip */
+    kernel_pid_t err_sub;                /**< subscriber to errors related to this
+                                          *   packet snip */
 #endif
 } gnrc_pktsnip_t;
 
