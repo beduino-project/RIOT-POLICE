@@ -1,6 +1,6 @@
 PKG_NAME=checkedc
 PKG_URL=https://github.com/Microsoft/checkedc.git
-PKG_VERSION=526661dd5d35e05acb13ec4d00255d79395cdffc
+PKG_VERSION=1768c2ae2aef912e514a788605497ea294f9622c
 PKG_LICENSE=MIT
 
 .PHONY: all
