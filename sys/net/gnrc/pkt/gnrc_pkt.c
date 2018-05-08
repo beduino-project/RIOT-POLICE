@@ -19,7 +19,7 @@
 #include "net/gnrc/pkt.h"
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 gnrc_pktsnip_t *gnrc_pktsnip_search_type(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)),

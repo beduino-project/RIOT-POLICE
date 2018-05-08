@@ -33,7 +33,7 @@
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #ifdef __cplusplus
@@ -390,7 +390,7 @@ int gnrc_netreg_calc_csum(gnrc_pktsnip_t *hdr atype(ptr(gnrc_pktsnip_t)),
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* NET_GNRC_NETREG_H */

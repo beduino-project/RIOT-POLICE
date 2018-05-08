@@ -35,7 +35,7 @@
 
 #ifdef USE_CHECKEDC
 #include "string_checked.h"
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #ifdef __cplusplus
@@ -807,7 +807,7 @@ void ipv6_addr_print(const ipv6_addr_t *addr atype(ptr(const ipv6_addr_t)));
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* NET_IPV6_ADDR_H */

@@ -162,7 +162,7 @@ typedef struct {
 } gnrc_netif_ops_t;
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 /**
@@ -499,7 +499,7 @@ size_t gnrc_netif_addr_from_str(const char *str atype(nt_array_ptr(const char)),
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* NET_GNRC_NETIF_H */

@@ -22,7 +22,7 @@
 #include "debug.h"
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 uint16_t inet_csum_slice(uint16_t sum, const uint8_t *buf acount(len),

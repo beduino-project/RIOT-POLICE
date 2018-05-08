@@ -65,7 +65,7 @@
 #include "net/gnrc/pkt.h"
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #ifdef __cplusplus
@@ -217,7 +217,7 @@ int gnrc_netapi_set(kernel_pid_t pid, netopt_t opt, uint16_t context,
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* NET_GNRC_NETAPI_H */

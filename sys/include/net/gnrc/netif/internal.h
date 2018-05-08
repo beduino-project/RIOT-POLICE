@@ -28,7 +28,7 @@
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #ifdef __cplusplus
@@ -427,7 +427,7 @@ static inline bool gnrc_netif_is_6lbr(const gnrc_netif_t *netif atype(ptr(const 
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* NET_GNRC_NETIF_INTERNAL_H */

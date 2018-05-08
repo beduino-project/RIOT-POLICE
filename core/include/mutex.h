@@ -28,7 +28,7 @@
 #include "checkedc.h"
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #ifdef __cplusplus
@@ -137,7 +137,7 @@ void mutex_unlock_and_sleep(mutex_t *mutex atype(ptr(mutex_t)));
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* MUTEX_H */
