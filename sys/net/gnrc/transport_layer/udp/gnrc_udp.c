@@ -32,7 +32,7 @@
 
 #ifdef USE_CHECKEDC
 #include "string_checked.h"
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #define ENABLE_DEBUG    (0)

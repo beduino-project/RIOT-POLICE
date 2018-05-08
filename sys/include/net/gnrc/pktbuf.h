@@ -42,7 +42,7 @@
 #include "checkedc.h"
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #ifdef __cplusplus
@@ -333,7 +333,7 @@ bool gnrc_pktbuf_is_sane(void);
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* NET_GNRC_PKTBUF_H */

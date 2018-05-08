@@ -30,7 +30,7 @@
 #include "net/ipv6/addr.h"
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #ifdef __cplusplus
@@ -317,7 +317,7 @@ void gnrc_ipv6_nib_nc_print(gnrc_ipv6_nib_nc_t *nce atype(ptr(gnrc_ipv6_nib_nc_t
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* NET_GNRC_IPV6_NIB_NC_H */

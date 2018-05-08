@@ -25,7 +25,7 @@
 #include "checkedc.h"
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #ifdef __cplusplus
@@ -86,7 +86,7 @@ static inline uint16_t inet_csum(uint16_t sum,
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* NET_INET_CSUM_H */

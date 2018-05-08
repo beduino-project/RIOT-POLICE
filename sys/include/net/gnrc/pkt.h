@@ -30,7 +30,7 @@
 #include "net/gnrc/nettype.h"
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #ifdef __cplusplus
@@ -209,7 +209,7 @@ gnrc_pktsnip_t *gnrc_pktsnip_search_type(gnrc_pktsnip_t *pkt atype(ptr(gnrc_pkts
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* NET_GNRC_PKT_H */

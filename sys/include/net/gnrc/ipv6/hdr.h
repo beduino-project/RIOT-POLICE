@@ -26,7 +26,7 @@
 #include "net/gnrc/pkt.h"
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #ifdef __cplusplus
@@ -58,7 +58,7 @@ gnrc_pktsnip_t *gnrc_ipv6_hdr_build(gnrc_pktsnip_t *payload atype(ptr(gnrc_pktsn
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* NET_GNRC_IPV6_HDR_H */

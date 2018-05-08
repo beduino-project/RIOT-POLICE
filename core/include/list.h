@@ -26,7 +26,7 @@
 #include "checkedc.h"
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #ifdef __cplusplus
@@ -111,7 +111,7 @@ static inline list_node_t *list_remove(list_node_t *list atype(ptr(list_node_t))
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* LIST_H */

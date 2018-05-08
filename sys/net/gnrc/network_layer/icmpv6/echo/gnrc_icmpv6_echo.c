@@ -22,7 +22,7 @@
 #include "utlist.h"
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #define ENABLE_DEBUG    (0)

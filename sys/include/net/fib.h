@@ -32,7 +32,7 @@
 #include "kernel_types.h"
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #ifdef __cplusplus
@@ -558,7 +558,7 @@ int fib_devel_get_lifetime(fib_table_t *table atype(ptr(fib_table_t)),
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* NET_FIB_H */

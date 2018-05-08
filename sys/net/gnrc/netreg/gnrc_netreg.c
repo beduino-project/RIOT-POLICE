@@ -28,7 +28,7 @@
 
 #ifdef USE_CHECKEDC
 #include "string_checked.h"
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #define _INVALID_TYPE(type) (((type) < GNRC_NETTYPE_UNDEF) || ((type) >= GNRC_NETTYPE_NUMOF))

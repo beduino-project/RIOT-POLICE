@@ -39,7 +39,7 @@
 #include "net/gnrc/pkt.h"
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED ON
+#pragma CHECKED_SCOPE ON
 #endif
 
 #ifdef __cplusplus
@@ -381,7 +381,7 @@ void gnrc_ipv6_nib_change_rtr_adv_iface(gnrc_netif_t *netif atype(ptr(gnrc_netif
 #endif
 
 #ifdef USE_CHECKEDC
-#pragma BOUNDS_CHECKED OFF
+#pragma CHECKED_SCOPE OFF
 #endif
 
 #endif /* NET_GNRC_IPV6_NIB_H */
