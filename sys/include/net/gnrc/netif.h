@@ -48,19 +48,68 @@
 #include "net/netdev.h"
 #include "rmutex.h"
 
+#ifdef USE_CHECKEDC
+#pragma CHECKED_SCOPE ON
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * @brief   Representation of a network interface
- */
-typedef struct gnrc_netif gnrc_netif_t;
-
-/**
  * @brief   Operations to an interface
  */
+typedef struct gnrc_netif_ops gnrc_netif_ops_t;
+
+/**
+ * @brief   Representation of a network interface
+ */
 typedef struct {
+    const gnrc_netif_ops_t *ops
+        atype(ptr(const gnrc_netif_ops_t)); /**< Operations of the network interface */
+    netdev_t *dev atype(ptr(netdev_t));     /**< Network device of the network interface */
+    rmutex_t mutex;                         /**< Mutex of the interface */
+#if defined(MODULE_GNRC_IPV6) || DOXYGEN
+    gnrc_netif_ipv6_t ipv6;                 /**< IPv6 component */
+#endif
+#if defined(MODULE_GNRC_MAC) || DOXYGEN
+    gnrc_netif_mac_t mac;                   /**< @ref net_gnrc_mac component */
+#endif  /* MODULE_GNRC_MAC */
+    /**
+     * @brief   Flags for the interface
+     *
+     * @see net_gnrc_netif_flags
+     */
+    uint32_t flags;
+#if (GNRC_NETIF_L2ADDR_MAXLEN > 0)
+    /**
+     * @brief   The link-layer address currently used as the source address
+     *          on this interface.
+     *
+     * @note    Only available if @ref GNRC_NETIF_L2ADDR_MAXLEN > 0
+     */
+    uint8_t l2addr[GNRC_NETIF_L2ADDR_MAXLEN]
+        atype(uint8_t checked[GNRC_NETIF_L2ADDR_MAXLEN]);
+
+    /**
+     * @brief   Length in bytes of gnrc_netif_t::l2addr
+     *
+     * @note    Only available if @ref GNRC_NETIF_L2ADDR_MAXLEN > 0
+     */
+    uint8_t l2addr_len;
+#endif
+#if defined(MODULE_GNRC_SIXLOWPAN) || DOXYGEN
+    gnrc_netif_6lo_t sixlo;                 /**< 6Lo component */
+#endif
+    uint8_t cur_hl;                         /**< Current hop-limit for out-going packets */
+    uint8_t device_type;                    /**< Device type */
+    kernel_pid_t pid;                       /**< PID of the network interface's thread */
+} gnrc_netif_t;
+
+/**
+ * @see gnrc_netif_ops_t
+ */
+struct gnrc_netif_ops {
     /**
      * @brief   Initializes network interface beyond the default settings
      *
@@ -73,7 +122,7 @@ typedef struct {
      * the interface's mutex gnrc_netif_t::mutex, since the thread will already
      * lock it. Leave NULL if you do not need any special initialization.
      */
-    void (*init)(gnrc_netif_t *netif);
+    checked_fn(void,, init, gnrc_netif_t *netif atype(ptr(gnrc_netif_t)));
 
     /**
      * @brief   Send a @ref net_gnrc_pkt "packet" over the network interface
@@ -95,7 +144,8 @@ typedef struct {
      *          (e.g. empty payload with Ethernet).
      * @return  Any negative error code reported by gnrc_netif_t::dev.
      */
-    int (*send)(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt);
+    checked_fn(int,, send, gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+               gnrc_pktsnip_t *pkt atype(ptr(gnrc_pktsnip_t)));
 
     /**
      * @brief   Receives a @ref net_gnrc_pkt "packet" from the network interface
@@ -113,7 +163,8 @@ typedef struct {
      *          accordingly) and a @ref net_gnrc_netif_hdr in receive order.
      * @return  NULL, if @ref net_gnrc_pktbuf was full.
      */
-    gnrc_pktsnip_t *(*recv)(gnrc_netif_t *netif);
+    checked_fn(gnrc_pktsnip_t*, atype(ptr(gnrc_pktsnip_t)), recv,
+               gnrc_netif_t *netif atype(ptr(gnrc_netif_t)));
 
     /**
      * @brief   Gets an option from the network interface
@@ -129,7 +180,8 @@ typedef struct {
      * @return  -ENOTSUP, if @p opt is not supported to be set.
      * @return  Any negative error code reported by gnrc_netif_t::dev.
      */
-    int (*get)(gnrc_netif_t *netif, gnrc_netapi_opt_t *opt);
+    checked_fn(int,, get, gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+               gnrc_netapi_opt_t *opt atype(ptr(gnrc_netapi_opt_t)));
 
     /**
      * @brief  Sets an option from the network interface
@@ -146,7 +198,8 @@ typedef struct {
      * @return  -ENOTSUP, if @p opt is not supported to be set.
      * @return  Any negative error code reported by gnrc_netif_t::dev.
      */
-    int (*set)(gnrc_netif_t *netif, const gnrc_netapi_opt_t *opt);
+    checked_fn(int,, set, gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+               const gnrc_netapi_opt_t *opt atype(ptr(const gnrc_netapi_opt_t)));
 
     /**
      * @brief   Message handler for network interface
@@ -158,55 +211,8 @@ typedef struct {
      * @param[in] netif The network interface.
      * @param[in] msg   Message to be handled.
      */
-    void (*msg_handler)(gnrc_netif_t *netif, msg_t *msg);
-} gnrc_netif_ops_t;
-
-#ifdef USE_CHECKEDC
-#pragma CHECKED_SCOPE ON
-#endif
-
-/**
- * @see gnrc_netif_t
- */
-struct gnrc_netif {
-    const gnrc_netif_ops_t *ops
-        atype(ptr(const gnrc_netif_ops_t)); /**< Operations of the network interface */
-    netdev_t *dev atype(ptr(netdev_t));     /**< Network device of the network interface */
-    rmutex_t mutex;                         /**< Mutex of the interface */
-#if defined(MODULE_GNRC_IPV6) || DOXYGEN
-    gnrc_netif_ipv6_t ipv6;                 /**< IPv6 component */
-#endif
-#if defined(MODULE_GNRC_MAC) || DOXYGEN
-    gnrc_netif_mac_t mac;                  /**< @ref net_gnrc_mac component */
-#endif  /* MODULE_GNRC_MAC */
-    /**
-     * @brief   Flags for the interface
-     *
-     * @see net_gnrc_netif_flags
-     */
-    uint32_t flags;
-#if (GNRC_NETIF_L2ADDR_MAXLEN > 0)
-    /**
-     * @brief   The link-layer address currently used as the source address
-     *          on this interface.
-     *
-     * @note    Only available if @ref GNRC_NETIF_L2ADDR_MAXLEN > 0
-     */
-    uint8_t l2addr[GNRC_NETIF_L2ADDR_MAXLEN] atype(uint8_t checked[GNRC_NETIF_L2ADDR_MAXLEN]);
-
-    /**
-     * @brief   Length in bytes of gnrc_netif_t::l2addr
-     *
-     * @note    Only available if @ref GNRC_NETIF_L2ADDR_MAXLEN > 0
-     */
-    uint8_t l2addr_len;
-#endif
-#if defined(MODULE_GNRC_SIXLOWPAN) || DOXYGEN
-    gnrc_netif_6lo_t sixlo;                 /**< 6Lo component */
-#endif
-    uint8_t cur_hl;                         /**< Current hop-limit for out-going packets */
-    uint8_t device_type;                    /**< Device type */
-    kernel_pid_t pid;                       /**< PID of the network interface's thread */
+    checked_fn(void,, msg_handler, gnrc_netif_t *netif atype(ptr(gnrc_netif_t)),
+               msg_t *msg atype(ptr(msg_t)));
 };
 
 /**
